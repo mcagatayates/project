@@ -8,27 +8,31 @@ BIST açılışından ~1 saat önce) kontrol edip Telegram'a bildirim atan bot.
 1. **Günlük** — TEFAS'ın resmi API'sinden her Tera fonunun varlık sınıfı
    dağılımını (Hisse Senedi %, Kamu Borçlanma %, Ters Repo % vb.) çeker,
    bir önceki işlem gününe göre kıyaslar, artan kalemleri bildirir.
-2. **Aylık** — KAP'ta yeni bir "Fon Portföy Dağılım Raporu" yayınlanınca
-   (bu rapor ayda ~1 kez, ay kapandıktan ~6 iş günü sonra çıkar), hangi
-   hisselerin (GARAN, THYAO vb.) ağırlığının arttığını bildirir.
+2. **KAP pay alım/satım bildirimleri** — Tera Portföy Yönetimi A.Ş.'nin
+   KAP'a düştüğü yeni bir "Pay Alım Satım Bildirimi" olduğunda (bir fonu
+   bir hissede belirli bir eşiği geçtiğinde dosyalanır), hangi fonun
+   hangi hissede işlem bildirdiğini gösterir. Bu, aylık değil olay
+   bazlıdır — yeni bildirim geldikçe, genelde haftada birkaç kez düşer.
 
-## Bilinen sınırlama
+## Bilinen sınırlama / tasarım kararı
 
 TEFAS **günlük** olarak sadece varlık sınıfı bazında veri yayınlıyor;
-hangi şirketin hissesini ne kadar tuttuğu bilgisi (per-stock) sadece
-KAP'ın **aylık** raporunda var. Yani "hangi hisseyi aldılar" sorusunun
-gerçek, hisse-bazlı cevabı ayda yaklaşık 1 kez güncellenir — günlük mesaj
-her zaman gelir ama çoğu gün sadece varlık sınıfı trendini içerir.
+hisse bazlı veri hiç yok. İlk tasarımda KAP'ın aylık "Fon Portföy
+Dağılım Raporu" yayınladığı varsayılmıştı, ama canlı kontrol (Tera
+Portföy Yönetimi'nin 180 günlük / 90 bildirimlik geçmişi) böyle bir
+rapor türünün bu fonlar için **hiç dosyalanmadığını** gösterdi. Bunun
+yerine gerçek sinyal "Pay Alım Satım Bildirimi" — bir fon bir hissede
+eşik aştığında dosyalanan, hem hisseyi hem fonu içeren bildirim.
+`disclosureBody` HTML'inden "İlgili Şirketler" / "İlgili Fonlar"
+alanlarını regex ile ayrıştırıyoruz; format değişirse ayrıştırma
+sessizce boş dönebilir — bu durumda bot çökmez, "yeni bildirim var ama
+ayrıştırılamadı" diyip linki verir.
 
 Hem TEFAS hem KAP tarafındaki istekler, bu kodun yazıldığı ortamdan
-tefas.gov.tr/kap.org.tr'ye erişim engelli olduğu için **canlı test
-edilemeden** yazıldı — ilk gerçek çalıştırmada TEFAS eski (artık kapanmış)
-bir endpoint'e ve KAP tahmini bir endpoint'e gittiği için ikisi de
-hata verdi; bunlar GitHub'daki güncel açık kaynak TEFAS/KAP istemcilerinin
-kaynak kodu incelenerek doğru uç noktalarla düzeltildi. Yine de KAP
-tarafındaki rapor tablosu ayrıştırma mantığı best-effort'tur — otomatik
-ayrıştırma başarısız olursa bot çökmez, sadece "yeni rapor var ama
-otomatik okunamadı, işte link" der.
+tefas.gov.tr/kap.org.tr'ye erişim engelli olduğu için doğrudan bu
+sandbox'tan test edilemedi — bunun yerine geçici bir "debug probe"
+GitHub Actions workflow'u ile gerçek API cevapları defalarca incelenip
+kod buna göre düzeltildi (bkz. git geçmişi).
 
 ## Kurulum
 

@@ -1,32 +1,28 @@
-"""KAP (Kamuyu Aydınlatma Platformu) client — monthly per-stock fund holdings.
+"""KAP (Kamuyu Aydınlatma Platformu) client — per-stock signal for Tera's funds.
 
-TEFAS only publishes asset-CLASS allocation (see tefas_client.py). Actual
-per-security holdings ("Tera hangi hisseyi ne kadar tutuyor") are only
-published by fund management companies through KAP's standardized
-"Fon Portföy Dağılım Raporu" (Fund Portfolio Distribution Report), filed
-monthly, within ~6 business days after each month closes.
+TEFAS only publishes asset-CLASS allocation (see tefas_client.py), never
+individual stock holdings. A KAP monthly "Fon Portföy Dağılım Raporu"
+does not appear to exist for Tera's funds (checked live: zero matches
+across 90 disclosures / 180 days for the fund manager). Instead, the real
+usable per-stock signal is KAP's "Pay Alım Satım Bildirimi" (Shares
+Transaction Notification) — filed by TERA PORTFÖY YÖNETİMİ A.Ş. whenever
+one of its funds crosses an ownership threshold in a listed company's
+stock. Each notification's body names both the traded company ticker(s)
+("İlgili Şirketler") and the Tera fund code(s) involved ("İlgili
+Fonlar") — this is a near-real-time signal of what Tera's funds are
+accumulating, confirmed live via a debug probe (see git history for
+tera-debug-probe.yml).
 
-Endpoints below follow KAP's actual JSON API, confirmed live via a
-one-off debug probe run in GitHub Actions (this module's original
-version guessed at a roster-by-type-and-letter lookup that turned out to
-always return an empty list — replaced with the working member/filter
-text search):
+Endpoints (confirmed live via a one-off debug probe run in GitHub
+Actions):
   - member text search: GET /tr/api/member/filter/{query}
   - disclosure search:  POST /tr/api/disclosure/members/byCriteria
   - disclosure detail:  GET /tr/api/notification/attachment-detail/{id}
 
-The KAP filer for Tera's funds is "TERA YATIRIM MENKUL DEĞERLER A.Ş."
-(their brokerage entity, not a separately-named portfolio manager) —
-confirmed via /tr/api/member/filter/tera, mkkMemberOid hardcoded below
-since it's a stable identifier and avoids a lookup round-trip on every
-run.
-
-The disclosure-detail parsing (turning a report into per-stock weights)
-could not be live-tested — no real "Fon Portföy Dağılım Raporu" was
-found in the search window at the time this was written. Treat that part
-as best-effort: if a fund's report can't be found or its table can't be
-parsed, callers fall back to sending a plain link rather than staying
-silent or crashing the whole daily job.
+Note: there are two distinct Tera entities in KAP — "TERA PORTFÖY
+YÖNETİMİ A.Ş." (the fund manager, files fund-related disclosures) and
+"TERA YATIRIM MENKUL DEĞERLER A.Ş." (the brokerage, files its own
+corporate disclosures only). This module uses the former.
 """
 from __future__ import annotations
 
@@ -43,8 +39,12 @@ DETAIL_URL = f"{KAP_BASE}/tr/api/notification/attachment-detail/{{disclosure_ind
 MEMBER_FILTER_URL = f"{KAP_BASE}/tr/api/member/filter/{{query}}"
 DISCLOSURE_PAGE_URL = f"{KAP_BASE}/tr/Bildirim/{{disclosure_index}}"
 
-# TERA YATIRIM MENKUL DEĞERLER A.Ş. — confirmed via /tr/api/member/filter/tera
-TERA_MENKUL_MEMBER_OID = "4028e4a141733b56014178115f7e51e7"
+# TERA PORTFÖY YÖNETİMİ A.Ş. — the fund manager, confirmed via
+# /tr/api/member/filter/tera and by finding its "Pay Alım Satım
+# Bildirimi" filings naming Tera's own fund codes (TLY, TMV, THF, T3B...).
+TERA_PORTFOY_MEMBER_OID = "5553acdacf15471ba80c28eb45cdd9e7"
+
+SHARE_TRANSACTION_SUBJECT = "Pay Alım Satım Bildirimi"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -54,15 +54,10 @@ HEADERS = {
     "Referer": f"{KAP_BASE}/tr/bildirim-sorgu",
 }
 
-REPORT_SUBJECT_HINT = "portföy dağılım raporu"
-ROW_RE = re.compile(r"<tr\b.*?>(.*?)</tr>", re.IGNORECASE | re.DOTALL)
-CELL_RE = re.compile(r"<t[dh]\b.*?>(.*?)</t[dh]>", re.IGNORECASE | re.DOTALL)
-HTML_TAG_RE = re.compile(r"<[^>]+>")
-# A plausible BIST ticker is 3-6 uppercase Latin/Turkish letters (as its
-# own table cell, not just anywhere in text — avoids matching stray
-# uppercase header words like "TARİH" or "ORAN").
-TICKER_CELL_RE = re.compile(r"^[A-ZİÇŞĞÜÖ]{3,6}$")
-PERCENT_CELL_RE = re.compile(r"([0-9]{1,3}[.,][0-9]{1,4})\s*%?$")
+# The disclosure body lists related companies/funds as e.g.
+# "İlgili Şirketler ... [ISVEA]" / "İlgili Fonlar ... [TLY, TMV]".
+RELATED_COMPANIES_RE = re.compile(r"İlgili Şirketler.*?\[([^\]]*)\]", re.DOTALL)
+RELATED_FUNDS_RE = re.compile(r"İlgili Fonlar.*?\[([^\]]*)\]", re.DOTALL)
 
 _session: requests.Session | None = None
 
@@ -114,46 +109,34 @@ def search_disclosures(member_oid: str, days_back: int = 40) -> list[dict[str, A
     return disclosures or []
 
 
-def find_latest_portfolio_report(member_oid: str, fund_name: str) -> dict[str, Any] | None:
-    """Return the newest 'Fon Portföy Dağılım Raporu' disclosure for a fund, if any."""
-    disclosures = search_disclosures(member_oid)
-    fund_hint = fund_name.strip().lower()
-    candidates = []
-    for d in disclosures:
-        subject = str(d.get("subject") or "").lower()
-        if REPORT_SUBJECT_HINT not in subject:
-            continue
-        # A member files one report per fund; make sure this disclosure is
-        # about *this* fund, not a sibling one, by requiring some overlap
-        # between the fund's name and the disclosure subject.
-        fund_words = [w for w in fund_hint.split() if len(w) > 3]
-        if fund_words and not any(w in subject for w in fund_words):
-            continue
-        candidates.append(d)
+def find_new_share_transactions(
+    member_oid: str, since_index: int, days_back: int = 15
+) -> list[dict[str, Any]]:
+    """Return 'Pay Alım Satım Bildirimi' disclosures newer than `since_index`.
 
-    if not candidates:
-        return None
-
-    def _index(d: dict[str, Any]) -> int:
-        try:
-            return int(d.get("disclosureIndex") or 0)
-        except (TypeError, ValueError):
-            return 0
-
-    candidates.sort(key=_index, reverse=True)
-    return candidates[0]
+    Sorted oldest-first so callers can process in publish order and track
+    the new high-water mark as they go.
+    """
+    disclosures = search_disclosures(member_oid, days_back)
+    matches = [
+        d
+        for d in disclosures
+        if str(d.get("subject") or "") == SHARE_TRANSACTION_SUBJECT
+        and int(d.get("disclosureIndex") or 0) > since_index
+    ]
+    matches.sort(key=lambda d: int(d.get("disclosureIndex") or 0))
+    return matches
 
 
-def disclosure_url(disclosure_index: str) -> str:
+def disclosure_url(disclosure_index: int | str) -> str:
     return DISCLOSURE_PAGE_URL.format(disclosure_index=disclosure_index)
 
 
-def parse_stock_weights(disclosure_index: str) -> dict[str, float]:
-    """Best-effort extraction of {ticker: weight_percent} from a disclosure.
+def parse_transaction_notification(disclosure_index: int | str) -> dict[str, list[str]]:
+    """Extract {"companies": [...], "funds": [...]} from a notification's body.
 
-    Returns an empty dict if nothing recognizable is found — callers
-    should treat that as "couldn't parse, fall back to sending the raw
-    link" rather than as "fund holds no stocks".
+    Returns empty lists for whichever side can't be found — callers
+    should treat that as "couldn't parse" rather than "no companies/funds".
     """
     url = DETAIL_URL.format(disclosure_index=disclosure_index)
     resp = _get_session().get(url, timeout=30)
@@ -168,34 +151,18 @@ def parse_stock_weights(disclosure_index: str) -> dict[str, float]:
             html_parts.extend(str(b) for b in body)
         elif isinstance(body, str):
             html_parts.append(body)
-
     html = " ".join(html_parts)
 
-    weights: dict[str, float] = {}
-    for row_match in ROW_RE.finditer(html):
-        cells = [
-            HTML_TAG_RE.sub("", cell).strip()
-            for cell in CELL_RE.findall(row_match.group(1))
-        ]
-        if len(cells) < 2:
-            continue
-
-        ticker = next((c for c in cells if TICKER_CELL_RE.match(c)), None)
-        if ticker is None:
-            continue
-
-        pct = None
-        for cell in cells:
-            m = PERCENT_CELL_RE.search(cell)
-            if m:
-                try:
-                    candidate = float(m.group(1).replace(",", "."))
-                except ValueError:
-                    continue
-                if 0 < candidate <= 100:
-                    pct = candidate
-                    break
-        if pct is not None:
-            weights[ticker] = pct
-
-    return weights
+    companies_match = RELATED_COMPANIES_RE.search(html)
+    funds_match = RELATED_FUNDS_RE.search(html)
+    companies = (
+        [c.strip() for c in companies_match.group(1).split(",") if c.strip()]
+        if companies_match
+        else []
+    )
+    funds = (
+        [f.strip() for f in funds_match.group(1).split(",") if f.strip()]
+        if funds_match
+        else []
+    )
+    return {"companies": companies, "funds": funds}

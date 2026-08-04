@@ -1,15 +1,19 @@
 """Daily orchestrator: run once, send (at most) one Telegram message.
 
-Checks, for every Tera Portföy fund:
-  1. TEFAS daily asset-class allocation vs. the previous trading day
-     (reliable, always runs).
-  2. Whether KAP published a new monthly per-stock "Fon Portföy Dağılım
-     Raporu" since we last checked, and if so, which stocks gained weight
-     vs. the prior report (best-effort, see kap_client.py).
+Checks:
+  1. TEFAS daily asset-class allocation vs. the previous trading day, for
+     every Tera Portföy fund (reliable, always runs).
+  2. Whether KAP published a new "Pay Alım Satım Bildirimi" (shares
+     transaction notification) for TERA PORTFÖY YÖNETİMİ A.Ş. since we
+     last checked — each one names both the stock ticker and the Tera
+     fund(s) that crossed an ownership threshold in it, which is the
+     real per-stock "what are they buying" signal (there is no monthly
+     portfolio-distribution report for these funds — checked live).
 
-State (last-seen snapshots) is persisted to state/state.json, which the
-GitHub Actions workflow commits back to the repo after each run so the
-next day's comparison has something to diff against.
+State (last-seen snapshots / disclosure index) is persisted to
+state/state.json, which the GitHub Actions workflow commits back to the
+repo after each run so the next day's comparison has something to diff
+against.
 """
 from __future__ import annotations
 
@@ -27,7 +31,7 @@ import telegram_notify
 
 STATE_PATH = Path(__file__).resolve().parent.parent / "state" / "state.json"
 
-# Known Tera Portföy Yönetimi A.Ş. funds (TEFAS fon kodu -> KAP arama adı).
+# Known Tera Portföy Yönetimi A.Ş. funds (TEFAS fon kodu -> tam adı).
 # Update this list if Tera launches or closes a fund — cross-check against
 # https://www.teraportfoy.com/fonlarimiz
 TERA_FUNDS = {
@@ -43,13 +47,12 @@ TERA_FUNDS = {
 # Only alert on allocation moves at least this many percentage points,
 # to avoid noise from rounding-level daily wobble.
 MIN_DAILY_DELTA = 1.0
-MIN_MONTHLY_DELTA = 0.5
 
 
 def load_state() -> dict:
     if STATE_PATH.exists():
         return json.loads(STATE_PATH.read_text())
-    return {"tefas_daily": {}, "kap_monthly": {}}
+    return {"tefas_daily": {}, "kap_transactions": {"last_seen_index": 0}}
 
 
 def save_state(state: dict) -> None:
@@ -100,86 +103,47 @@ def check_tefas_daily(state: dict, errors: list[str]) -> list[str]:
     return lines
 
 
-def check_kap_monthly(state: dict, errors: list[str]) -> list[str]:
+def check_kap_transactions(state: dict, errors: list[str]) -> list[str]:
     lines = []
+    state.setdefault("kap_transactions", {"last_seen_index": 0})
+    last_seen = int(state["kap_transactions"].get("last_seen_index", 0))
 
-    # Hardcoded, confirmed mkkMemberOid for TERA YATIRIM MENKUL DEĞERLER
-    # A.Ş. (the brokerage entity that funds Tera's KAP filings) — avoids a
-    # lookup round-trip every run. Fall back to a live search only if that
-    # ever stops matching (e.g. KAP re-issues member OIDs).
-    member_oid = kap_client.TERA_MENKUL_MEMBER_OID or kap_client.find_member_oid(
-        "TERA YATIRIM MENKUL DEĞERLER"
-    )
-    if member_oid is None:
-        errors.append(
-            "KAP'ta 'Tera Yatırım Menkul Değerler' üyesi bulunamadı, aylık hisse kontrolü atlandı."
+    try:
+        new_disclosures = kap_client.find_new_share_transactions(
+            kap_client.TERA_PORTFOY_MEMBER_OID, last_seen
         )
+    except Exception as exc:  # noqa: BLE001
+        errors.append(f"KAP pay alım/satım kontrolü başarısız — {exc}")
         return lines
 
-    for code, name in TERA_FUNDS.items():
+    max_index = last_seen
+    for disclosure in new_disclosures:
+        idx = int(disclosure.get("disclosureIndex") or 0)
+        max_index = max(max_index, idx)
+        date = disclosure.get("publishDate", "")
+        url = kap_client.disclosure_url(idx)
+
         try:
-            report = kap_client.find_latest_portfolio_report(member_oid, name)
-            if report is None:
-                continue
+            parsed = kap_client.parse_transaction_notification(idx)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"KAP bildirimi {idx} ayrıştırılamadı — {exc}")
+            continue
 
-            disclosure_id = str(report.get("disclosureIndex") or report.get("id") or "")
-            if not disclosure_id:
-                continue
+        companies = parsed.get("companies") or []
+        funds = [f for f in (parsed.get("funds") or []) if f in TERA_FUNDS]
+        if not companies or not funds:
+            lines.append(
+                f"🔔 Yeni bir Pay Alım Satım Bildirimi geldi ama otomatik "
+                f"ayrıştırılamadı, manuel bakman gerekebilir ({date}): {url}"
+            )
+            continue
 
-            state.setdefault("kap_monthly", {})
-            stored = state["kap_monthly"].get(code)
-            if stored and stored.get("disclosure_id") == disclosure_id:
-                continue  # already processed this report
+        lines.append(
+            f"🔔 <b>{', '.join(funds)}</b> fonu/fonları → <b>{', '.join(companies)}</b> "
+            f"hissesinde pay alım/satım bildirimi ({date})\n{url}"
+        )
 
-            new_weights = kap_client.parse_stock_weights(disclosure_id)
-            url = kap_client.disclosure_url(disclosure_id)
-
-            if not new_weights:
-                lines.append(
-                    f"📄 <b>{code}</b> ({name}): yeni bir KAP Portföy Dağılım Raporu "
-                    f"yayınlandı ama otomatik ayrıştırılamadı, manuel bakman gerekebilir: {url}"
-                )
-                state["kap_monthly"][code] = {
-                    "disclosure_id": disclosure_id,
-                    "weights": stored.get("weights", {}) if stored else {},
-                }
-                continue
-
-            old_weights = stored.get("weights", {}) if stored else {}
-            gains = []
-            for ticker, new_val in new_weights.items():
-                old_val = old_weights.get(ticker, 0.0)
-                delta = new_val - old_val
-                if delta >= MIN_MONTHLY_DELTA:
-                    gains.append((ticker, old_val, new_val, delta))
-            gains.sort(key=lambda g: g[3], reverse=True)
-
-            if gains:
-                # Mirrors the "Ağırlık / Önceki / Fark" layout fund-tracking
-                # apps show: one stock per line, weight, previous weight,
-                # and the delta — brand-new positions show "yeni pozisyon"
-                # instead of a 0.0% "Önceki".
-                rows = []
-                for ticker, old, new, delta in gains:
-                    onceki = "yeni pozisyon" if old == 0.0 else f"Önceki %{old:.2f}"
-                    rows.append(f"• {ticker}: %{new:.2f} ({onceki}, Fark +{delta:.2f})")
-                lines.append(
-                    f"🏦 <b>{code}</b> ({name}) — hisse ağırlığı artanlar:\n"
-                    + "\n".join(rows)
-                    + f"\n{url}"
-                )
-            elif old_weights:
-                lines.append(
-                    f"🏦 <b>{code}</b> ({name}): yeni KAP raporu geldi, "
-                    f"belirgin bir ağırlık artışı yok.\n{url}"
-                )
-
-            state["kap_monthly"][code] = {
-                "disclosure_id": disclosure_id,
-                "weights": new_weights,
-            }
-        except Exception as exc:  # noqa: BLE001 - keep other funds running
-            errors.append(f"{code}: KAP kontrolü başarısız — {exc}")
+    state["kap_transactions"]["last_seen_index"] = max_index
     return lines
 
 
@@ -188,7 +152,7 @@ def main() -> None:
     errors: list[str] = []
 
     daily_lines = check_tefas_daily(state, errors)
-    monthly_lines = check_kap_monthly(state, errors)
+    transaction_lines = check_kap_transactions(state, errors)
 
     save_state(state)
 
@@ -200,8 +164,10 @@ def main() -> None:
     else:
         sections.append("\nGünlük: dikkate değer bir varlık sınıfı değişimi yok.")
 
-    if monthly_lines:
-        sections.append("\n".join(["", "<u>Aylık KAP hisse raporu:</u>", *monthly_lines]))
+    if transaction_lines:
+        sections.append(
+            "\n".join(["", "<u>KAP pay alım/satım bildirimleri:</u>", *transaction_lines])
+        )
 
     if errors:
         sections.append("\n".join(["", "<u>⚠️ Kontrol edilemeyenler:</u>", *errors]))
