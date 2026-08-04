@@ -1,4 +1,61 @@
 {
   "kap_monthly": {},
-  "tefas_daily": {}
+  "tefas_daily": {
+    "FSU": {
+      "date": null,
+      "weights": {
+        "hs": 8.53,
+        "osdb": 58.89,
+        "yyf": 32.58
+      }
+    },
+    "T3B": {
+      "date": null,
+      "weights": {
+        "hs": 8.53,
+        "osdb": 58.89,
+        "yyf": 32.58
+      }
+    },
+    "THF": {
+      "date": null,
+      "weights": {
+        "hs": 8.53,
+        "osdb": 58.89,
+        "yyf": 32.58
+      }
+    },
+    "TLV": {
+      "date": null,
+      "weights": {
+        "hs": 8.53,
+        "osdb": 58.89,
+        "yyf": 32.58
+      }
+    },
+    "TLY": {
+      "date": null,
+      "weights": {
+        "hs": 8.53,
+        "osdb": 58.89,
+        "yyf": 32.58
+      }
+    },
+    "TMV": {
+      "date": null,
+      "weights": {
+        "hs": 8.53,
+        "osdb": 58.89,
+        "yyf": 32.58
+      }
+    },
+    "TP2": {
+      "date": null,
+      "weights": {
+        "hs": 8.53,
+        "osdb": 58.89,
+        "yyf": 32.58
+      }
+    }
+  }
 }
