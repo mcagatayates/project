@@ -57,13 +57,35 @@ def _to_yyyymmdd(date: dt.date) -> str:
     return date.strftime("%Y%m%d")
 
 
-def fetch_allocation_history(
-    fund_code: str, start_date: dt.date, end_date: dt.date
-) -> list[dict[str, Any]]:
-    """Return TEFAS's daily allocation records for a fund between two dates."""
+def _record_fund_code(rec: dict[str, Any]) -> str:
+    for key in ("fonKodu", "FONKODU", "fonkodu", "code", "Kod"):
+        if key in rec:
+            return str(rec[key]).strip().upper()
+    return ""
+
+
+def _date_key(rec: dict[str, Any]) -> str:
+    for key in ("tarih", "TARIH", "date", "Date"):
+        if key in rec:
+            return str(rec[key])
+    return ""
+
+
+# Confirmed live: dagilimSiraliGetirT ignores the `fonKodu` filter and
+# always returns every fund on the platform for the date range — so
+# there's no point re-requesting it once per fund. Fetch the whole
+# universe once per (start, end) pair per process and filter in memory.
+_universe_cache: dict[tuple[str, str], list[dict[str, Any]]] = {}
+
+
+def _fetch_universe(start_date: dt.date, end_date: dt.date) -> list[dict[str, Any]]:
+    key = (start_date.isoformat(), end_date.isoformat())
+    if key in _universe_cache:
+        return _universe_cache[key]
+
     body = {
         "fonTipi": "YAT",
-        "fonKodu": fund_code,
+        "fonKodu": "",
         "basTarih": _to_yyyymmdd(start_date),
         "bitTarih": _to_yyyymmdd(end_date),
         "basSira": 1,
@@ -73,7 +95,7 @@ def fetch_allocation_history(
         "fonTurKod": None,
         "fonGrubu": None,
     }
-    resp = requests.post(TEFAS_DIST_URL, json=body, headers=HEADERS, timeout=30)
+    resp = requests.post(TEFAS_DIST_URL, json=body, headers=HEADERS, timeout=60)
     resp.raise_for_status()
     payload = resp.json()
 
@@ -83,33 +105,26 @@ def fetch_allocation_history(
     if isinstance(payload, list):
         records = payload
     elif isinstance(payload, dict):
-        for key in ("data", "resultList", "result", "Data"):
-            if key in payload and isinstance(payload[key], list):
-                records = payload[key]
+        for wrapper_key in ("data", "resultList", "result", "Data"):
+            if wrapper_key in payload and isinstance(payload[wrapper_key], list):
+                records = payload[wrapper_key]
                 break
     if records is None:
-        raise ValueError(f"Unrecognized TEFAS response shape: {list(payload)[:5] if isinstance(payload, dict) else type(payload)}")
+        raise ValueError(
+            f"Unrecognized TEFAS response shape: {list(payload)[:5] if isinstance(payload, dict) else type(payload)}"
+        )
 
-    def _record_fund_code(rec: dict[str, Any]) -> str:
-        for key in ("fonKodu", "FONKODU", "fonkodu", "code", "Kod"):
-            if key in rec:
-                return str(rec[key]).strip().upper()
-        return ""
+    _universe_cache[key] = records
+    return records
 
-    # Defensive: don't trust the API to honor the `fonKodu` filter server
-    # side (observed returning the same records regardless of the
-    # requested fund) — filter client-side too.
+
+def fetch_allocation_history(
+    fund_code: str, start_date: dt.date, end_date: dt.date
+) -> list[dict[str, Any]]:
+    """Return TEFAS's daily allocation records for a fund between two dates."""
+    universe = _fetch_universe(start_date, end_date)
     wanted = fund_code.strip().upper()
-    filtered = [r for r in records if _record_fund_code(r) == wanted]
-    if filtered:
-        records = filtered
-
-    def _date_key(rec: dict[str, Any]) -> str:
-        for key in ("tarih", "TARIH", "date", "Date"):
-            if key in rec:
-                return str(rec[key])
-        return ""
-
+    records = [r for r in universe if _record_fund_code(r) == wanted]
     records.sort(key=_date_key)
     return records
 

@@ -92,7 +92,7 @@ def check_tefas_daily(state: dict, errors: list[str]) -> list[str]:
                 lines.append(f"📈 <b>{code}</b> ({name}): {parts}")
 
             state["tefas_daily"][code] = {
-                "date": latest.get("TARIH"),
+                "date": latest.get("tarih") or latest.get("TARIH"),
                 "weights": latest_weights,
             }
         except Exception as exc:  # noqa: BLE001 - keep other funds running
