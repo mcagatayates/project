@@ -90,6 +90,20 @@ def fetch_allocation_history(
     if records is None:
         raise ValueError(f"Unrecognized TEFAS response shape: {list(payload)[:5] if isinstance(payload, dict) else type(payload)}")
 
+    def _record_fund_code(rec: dict[str, Any]) -> str:
+        for key in ("fonKodu", "FONKODU", "fonkodu", "code", "Kod"):
+            if key in rec:
+                return str(rec[key]).strip().upper()
+        return ""
+
+    # Defensive: don't trust the API to honor the `fonKodu` filter server
+    # side (observed returning the same records regardless of the
+    # requested fund) — filter client-side too.
+    wanted = fund_code.strip().upper()
+    filtered = [r for r in records if _record_fund_code(r) == wanted]
+    if filtered:
+        records = filtered
+
     def _date_key(rec: dict[str, Any]) -> str:
         for key in ("tarih", "TARIH", "date", "Date"):
             if key in rec:

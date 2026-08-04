@@ -67,25 +67,36 @@ def _get_session() -> requests.Session:
     return _session
 
 
-def find_member_oid(name_contains: str, member_type: str = "PYS") -> str | None:
+# KAP member-type codes worth trying when we don't know exactly how an
+# entity is classified: "YK" covers brokerages/investment firms (e.g. a
+# "Menkul Değerler A.Ş." that also runs fund management as a business
+# line), "PYS" is dedicated portfolio management companies, "IGS" is
+# BIST-listed companies.
+DEFAULT_MEMBER_TYPES = ("YK", "PYS", "IGS")
+
+
+def find_member_oid(name_contains: str, member_types: tuple[str, ...] = DEFAULT_MEMBER_TYPES) -> str | None:
     """Find a KAP member's mkkMemberOid by (partial, case-insensitive) name.
 
-    `member_type` defaults to "PYS" (portföy yönetim şirketi / portfolio
-    management company), which is what fund managers like Tera Portföy
-    are classified as.
+    Tries each member type in `member_types` in turn since KAP's
+    classification of a given company (brokerage vs. dedicated portfolio
+    manager vs. listed company) isn't something we can know for certain
+    without querying.
     """
     letter = name_contains.strip()[0].upper()
-    url = ROSTER_URL.format(member_type=member_type, letter=letter)
-    resp = _get_session().get(url, timeout=20)
-    resp.raise_for_status()
-    roster = resp.json()
-    items = roster if isinstance(roster, list) else roster.get("data", roster.get("result", []))
-
     needle = name_contains.strip().lower()
-    for item in items or []:
-        title = str(item.get("title") or item.get("unvan") or "")
-        if needle in title.lower():
-            return item.get("mkkMemberOid") or item.get("memberOid")
+
+    for member_type in member_types:
+        url = ROSTER_URL.format(member_type=member_type, letter=letter)
+        resp = _get_session().get(url, timeout=20)
+        if not resp.ok:
+            continue
+        roster = resp.json()
+        items = roster if isinstance(roster, list) else roster.get("data", roster.get("result", []))
+        for item in items or []:
+            title = str(item.get("title") or item.get("unvan") or "")
+            if needle in title.lower():
+                return item.get("mkkMemberOid") or item.get("memberOid")
     return None
 
 
