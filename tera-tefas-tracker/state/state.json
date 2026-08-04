@@ -4,57 +4,77 @@
     "FSU": {
       "date": null,
       "weights": {
-        "hs": 8.53,
-        "osdb": 58.89,
-        "yyf": 32.58
+        "byf": 37.18,
+        "hs": 19.92,
+        "yyf": 42.9
       }
     },
     "T3B": {
       "date": null,
       "weights": {
-        "hs": 8.53,
-        "osdb": 58.89,
-        "yyf": 32.58
+        "fb": 4.57,
+        "gsykb": 4.07,
+        "kkstl": 1.08,
+        "osks": 0.31,
+        "vdm": 3.15,
+        "vint": 0.01,
+        "yyf": 5.16
       }
     },
     "THF": {
       "date": null,
       "weights": {
-        "hs": 8.53,
-        "osdb": 58.89,
-        "yyf": 32.58
+        "hs": 92.54,
+        "vint": 7.46
       }
     },
     "TLV": {
       "date": null,
       "weights": {
-        "hs": 8.53,
-        "osdb": 58.89,
-        "yyf": 32.58
+        "btas": 28.87,
+        "d": 16.69,
+        "khtl": 25.86,
+        "kkstl": 16.14,
+        "osks": 12.44
       }
     },
     "TLY": {
       "date": null,
       "weights": {
-        "hs": 8.53,
-        "osdb": 58.89,
-        "yyf": 32.58
+        "fb": 4.72,
+        "hs": 79.11,
+        "osks": 5.65,
+        "tr": 14.19,
+        "vint": 0.01,
+        "vmtl": 0.11,
+        "yyf": 5.51
       }
     },
     "TMV": {
       "date": null,
       "weights": {
-        "hs": 8.53,
-        "osdb": 58.89,
-        "yyf": 32.58
+        "fb": 0.33,
+        "hs": 55.38,
+        "osks": 0.45,
+        "tr": 44.11,
+        "vdm": 1.15,
+        "vint": 0.16,
+        "yyf": 0.03
       }
     },
     "TP2": {
       "date": null,
       "weights": {
-        "hs": 8.53,
-        "osdb": 58.89,
-        "yyf": 32.58
+        "bpp": 12.99,
+        "dt": 10.19,
+        "fb": 1.81,
+        "khtl": 3.16,
+        "kkstl": 0.25,
+        "osks": 7.36,
+        "ost": 0.01,
+        "tr": 62.27,
+        "vdm": 1.28,
+        "vmtl": 0.68
       }
     }
   }
