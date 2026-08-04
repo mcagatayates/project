@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+log.txt
+log.txt.*
+state/*.json
+pinler/*
+!pinler/.gitkeep
+tasarimlar/*
+!tasarimlar/.gitkeep
