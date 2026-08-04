@@ -147,16 +147,18 @@ def check_kap_transactions(state: dict, errors: list[str]) -> list[str]:
         else:
             change_str = None
 
-        # One line per fund, stacked, rather than joining multiple funds
-        # into a single comma-separated line — easier to scan when a
-        # disclosure covers several Tera funds at once.
+        # The ownership % in the notification is a single combined figure
+        # across every fund named in it (when several funds jointly cross
+        # the threshold on the same stock) — one line per disclosure,
+        # listing all funds together, not one repeated line per fund.
         company_str = ", ".join(companies)
-        for fund in funds:
-            line = f"🔔 <b>{fund}</b> → <b>{company_str}</b> hissesinde pay alım/satım bildirimi ({date})"
-            if change_str:
-                line += f"\nPay oranı: {change_str}"
-            line += f"\n{url}"
-            lines.append(line)
+        fund_str = ", ".join(funds)
+        pct_label = "Toplam pay oranı" if len(funds) > 1 else "Pay oranı"
+        line = f"🔔 <b>{fund_str}</b> → <b>{company_str}</b> hissesinde pay alım/satım bildirimi ({date})"
+        if change_str:
+            line += f"\n{pct_label}: {change_str}"
+        line += f"\n{url}"
+        lines.append(line)
 
     state["kap_transactions"]["last_seen_index"] = max_index
     return lines
