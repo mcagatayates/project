@@ -141,11 +141,19 @@ def check_kap_monthly(state: dict, errors: list[str]) -> list[str]:
             gains.sort(key=lambda g: g[3], reverse=True)
 
             if gains:
-                parts = ", ".join(
-                    f"{ticker} {old:.1f}%→{new:.1f}% (+{delta:.1f})"
-                    for ticker, old, new, delta in gains
+                # Mirrors the "Ağırlık / Önceki / Fark" layout fund-tracking
+                # apps show: one stock per line, weight, previous weight,
+                # and the delta — brand-new positions show "yeni pozisyon"
+                # instead of a 0.0% "Önceki".
+                rows = []
+                for ticker, old, new, delta in gains:
+                    onceki = "yeni pozisyon" if old == 0.0 else f"Önceki %{old:.2f}"
+                    rows.append(f"• {ticker}: %{new:.2f} ({onceki}, Fark +{delta:.2f})")
+                lines.append(
+                    f"🏦 <b>{code}</b> ({name}) — hisse ağırlığı artanlar:\n"
+                    + "\n".join(rows)
+                    + f"\n{url}"
                 )
-                lines.append(f"🏦 <b>{code}</b> ({name}) hisse ağırlığı artanlar: {parts}\n{url}")
             elif old_weights:
                 lines.append(
                     f"🏦 <b>{code}</b> ({name}): yeni KAP raporu geldi, "
