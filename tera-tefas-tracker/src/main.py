@@ -138,15 +138,25 @@ def check_kap_transactions(state: dict, errors: list[str]) -> list[str]:
             )
             continue
 
+        old_pct = parsed.get("old_pct")
+        new_pct = parsed.get("new_pct")
+        if old_pct is not None and new_pct is not None:
+            delta = new_pct - old_pct
+            yon = "artırdı" if delta >= 0 else "azalttı"
+            change_str = f"%{old_pct:.2f} → %{new_pct:.2f} ({delta:+.2f} puan, {yon})"
+        else:
+            change_str = None
+
         # One line per fund, stacked, rather than joining multiple funds
         # into a single comma-separated line — easier to scan when a
         # disclosure covers several Tera funds at once.
         company_str = ", ".join(companies)
         for fund in funds:
-            lines.append(
-                f"🔔 <b>{fund}</b> → <b>{company_str}</b> hissesinde pay alım/satım "
-                f"bildirimi ({date})\n{url}"
-            )
+            line = f"🔔 <b>{fund}</b> → <b>{company_str}</b> hissesinde pay alım/satım bildirimi ({date})"
+            if change_str:
+                line += f"\nPay oranı: {change_str}"
+            line += f"\n{url}"
+            lines.append(line)
 
     state["kap_transactions"]["last_seen_index"] = max_index
     return lines

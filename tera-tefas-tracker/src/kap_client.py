@@ -58,6 +58,13 @@ HEADERS = {
 # "İlgili Şirketler ... [ISVEA]" / "İlgili Fonlar ... [TLY, TMV]".
 RELATED_COMPANIES_RE = re.compile(r"İlgili Şirketler.*?\[([^\]]*)\]", re.DOTALL)
 RELATED_FUNDS_RE = re.compile(r"İlgili Fonlar.*?\[([^\]]*)\]", re.DOTALL)
+HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+# The explanation prose always reads like: "...toplam pay oranı
+# 8.533441%'den 2.430599%'a düşmüştür." (or "...yükselmiştir" /
+# "...ulaşmıştır" for increases) — capture the before/after ownership
+# percentages regardless of which verb follows.
+OWNERSHIP_CHANGE_RE = re.compile(r"toplam pay oranı\s+([\d.]+)%'\w+\s+([\d.]+)%'\w+")
 
 _session: requests.Session | None = None
 
@@ -132,11 +139,13 @@ def disclosure_url(disclosure_index: int | str) -> str:
     return DISCLOSURE_PAGE_URL.format(disclosure_index=disclosure_index)
 
 
-def parse_transaction_notification(disclosure_index: int | str) -> dict[str, list[str]]:
-    """Extract {"companies": [...], "funds": [...]} from a notification's body.
+def parse_transaction_notification(disclosure_index: int | str) -> dict[str, Any]:
+    """Extract company/fund codes and the before/after ownership % from a
+    'Pay Alım Satım Bildirimi' notification's body.
 
-    Returns empty lists for whichever side can't be found — callers
-    should treat that as "couldn't parse" rather than "no companies/funds".
+    Returns {"companies": [...], "funds": [...], "old_pct": float | None,
+    "new_pct": float | None}. Missing pieces come back empty/None — callers
+    should treat that as "couldn't parse" rather than "no data".
     """
     url = DETAIL_URL.format(disclosure_index=disclosure_index)
     resp = _get_session().get(url, timeout=30)
@@ -165,4 +174,20 @@ def parse_transaction_notification(disclosure_index: int | str) -> dict[str, lis
         if funds_match
         else []
     )
-    return {"companies": companies, "funds": funds}
+
+    # The ownership-change sentence is prose split across table cells in
+    # the raw HTML; strip tags and collapse whitespace/entities so it
+    # reads as one continuous sentence before matching.
+    plain_text = HTML_TAG_RE.sub(" ", html).replace("&#160;", " ")
+    plain_text = re.sub(r"\s+", " ", plain_text)
+
+    old_pct = new_pct = None
+    change_match = OWNERSHIP_CHANGE_RE.search(plain_text)
+    if change_match:
+        try:
+            old_pct = float(change_match.group(1))
+            new_pct = float(change_match.group(2))
+        except ValueError:
+            old_pct = new_pct = None
+
+    return {"companies": companies, "funds": funds, "old_pct": old_pct, "new_pct": new_pct}
