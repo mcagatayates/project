@@ -102,9 +102,15 @@ def check_tefas_daily(state: dict, errors: list[str]) -> list[str]:
 
 def check_kap_monthly(state: dict, errors: list[str]) -> list[str]:
     lines = []
+
+    member_oid = kap_client.find_member_oid("TERA PORTFÖY")
+    if member_oid is None:
+        errors.append("KAP'ta 'Tera Portföy' üyesi bulunamadı, aylık hisse kontrolü atlandı.")
+        return lines
+
     for code, name in TERA_FUNDS.items():
         try:
-            report = kap_client.find_latest_portfolio_report(name)
+            report = kap_client.find_latest_portfolio_report(member_oid, name)
             if report is None:
                 continue
 

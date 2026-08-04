@@ -1,18 +1,21 @@
 """TEFAS (Türkiye Elektronik Fon Alım Satım Platformu) client.
 
-Uses TEFAS's public, unauthenticated JSON endpoint that backs the
-"Tarihsel Veriler" / "Portföy Dağılımı" pages on tefas.gov.tr. This
-returns, per fund per date, the fund's portfolio broken down by asset
-CLASS (e.g. "hisse senedi", "kamu borçlanma", "ters repo" ...) as
+Uses TEFAS's current, publicly-reachable JSON API (the site was rewritten
+at some point; the old `/api/DB/BindHistoryAllocation` endpoint is
+retired and now 404s — this targets the replacement under `/api/funds/`,
+confirmed against the mirzazad/pytefas client).
+
+This returns, per fund per date, the fund's portfolio broken down by
+asset CLASS (e.g. "hisse senedi", "kamu borçlanma", "ters repo" ...) as
 percentages of the total portfolio. It does NOT return individual stock
 tickers — TEFAS does not publish per-security holdings; that only comes
 from KAP's monthly fund reports (see kap_client.py).
 
-The exact set of allocation-column names returned by TEFAS has varied
-across sources we could find documented, so this client treats every
-non-metadata field in a record as a numeric allocation column rather
-than hardcoding names — that keeps it working even if TEFAS renames or
-adds columns.
+The exact response field/column names aren't officially documented, so
+this client treats every numeric field in the 0-100 range as a
+percentage-allocation column rather than hardcoding names — that keeps
+it working even if TEFAS renames or adds columns, and avoids
+accidentally treating a date/id field as an allocation weight.
 """
 from __future__ import annotations
 
@@ -21,62 +24,91 @@ from typing import Any
 
 import requests
 
-TEFAS_ALLOCATION_URL = "https://www.tefas.gov.tr/api/DB/BindHistoryAllocation"
+TEFAS_DIST_URL = "https://www.tefas.gov.tr/api/funds/dagilimSiraliGetirT"
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-    "Referer": "https://www.tefas.gov.tr/TarihselVeriler.aspx",
-    "X-Requested-With": "XMLHttpRequest",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Content-Type": "application/json",
+    "Accept": "application/json, text/plain, */*",
+    "Referer": "https://www.tefas.gov.tr/FonKarsilastirma.aspx",
 }
 
-# Fields TEFAS returns alongside the allocation percentages that are not
-# themselves allocation weights.
-METADATA_FIELDS = {"TARIH", "FONKODU", "FONUNVAN", "FONTURACIKLAMA", "FIYAT"}
+# Fields that are metadata, not allocation percentages — matched
+# case-insensitively so we don't care whether TEFAS returns "FONKODU",
+# "fonKodu", or similar variants.
+METADATA_FIELD_NAMES = {
+    "tarih",
+    "fonkodu",
+    "fonunvan",
+    "fontipi",
+    "fonturkod",
+    "fongrubu",
+    "fiyat",
+    "price",
+    "code",
+    "date",
+    "kind",
+    "id",
+}
 
 
-def _to_epoch_ms(date: dt.date) -> int:
-    return int(dt.datetime(date.year, date.month, date.day).timestamp() * 1000)
+def _to_yyyymmdd(date: dt.date) -> str:
+    return date.strftime("%Y%m%d")
 
 
 def fetch_allocation_history(
     fund_code: str, start_date: dt.date, end_date: dt.date
 ) -> list[dict[str, Any]]:
-    """Return TEFAS's daily allocation records for a fund between two dates.
-
-    TEFAS dates are given as "DD.MM.YYYY" in the request; the response is
-    a JSON object with a "data" list, one entry per trading day the fund
-    published a snapshot for (weekends/holidays are simply absent).
-    """
-    payload = {
-        "fontip": "YAT",
-        "sfontur": "",
-        "fonkod": fund_code,
-        "bastarih": start_date.strftime("%d.%m.%Y"),
-        "bittarih": end_date.strftime("%d.%m.%Y"),
+    """Return TEFAS's daily allocation records for a fund between two dates."""
+    body = {
+        "fonTipi": "YAT",
+        "fonKodu": fund_code,
+        "basTarih": _to_yyyymmdd(start_date),
+        "bitTarih": _to_yyyymmdd(end_date),
+        "basSira": 1,
+        "bitSira": 100000,
+        "dil": "TR",
+        "aramaMetni": None,
+        "fonTurKod": None,
+        "fonGrubu": None,
     }
-    resp = requests.post(TEFAS_ALLOCATION_URL, data=payload, headers=HEADERS, timeout=30)
+    resp = requests.post(TEFAS_DIST_URL, json=body, headers=HEADERS, timeout=30)
     resp.raise_for_status()
-    body = resp.json()
-    records = body.get("data", [])
-    # TARIH comes back as a "/Date(epoch_ms)/" style string on some TEFAS
-    # endpoints; normalize to an ISO date string when that's the case.
-    for rec in records:
-        tarih = rec.get("TARIH")
-        if isinstance(tarih, str) and tarih.startswith("/Date("):
-            epoch_ms = int(tarih.strip("/Date()"))
-            rec["TARIH"] = dt.datetime.utcfromtimestamp(epoch_ms / 1000).date().isoformat()
-    records.sort(key=lambda r: r.get("TARIH", ""))
+    payload = resp.json()
+
+    # The exact wrapper key isn't documented; try the ones known to be
+    # used by TEFAS's `/api/funds/*` family.
+    records = None
+    if isinstance(payload, list):
+        records = payload
+    elif isinstance(payload, dict):
+        for key in ("data", "resultList", "result", "Data"):
+            if key in payload and isinstance(payload[key], list):
+                records = payload[key]
+                break
+    if records is None:
+        raise ValueError(f"Unrecognized TEFAS response shape: {list(payload)[:5] if isinstance(payload, dict) else type(payload)}")
+
+    def _date_key(rec: dict[str, Any]) -> str:
+        for key in ("tarih", "TARIH", "date", "Date"):
+            if key in rec:
+                return str(rec[key])
+        return ""
+
+    records.sort(key=_date_key)
     return records
 
 
 def allocation_weights(record: dict[str, Any]) -> dict[str, float]:
-    """Extract {column_name: weight} for the non-metadata numeric fields."""
+    """Extract {column_name: weight} for numeric, plausible-percentage fields."""
     weights: dict[str, float] = {}
     for key, value in record.items():
-        if key in METADATA_FIELDS:
+        if key.lower() in METADATA_FIELD_NAMES:
             continue
-        if isinstance(value, (int, float)):
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, (int, float)) and 0 <= value <= 100:
             weights[key] = float(value)
     return weights
 

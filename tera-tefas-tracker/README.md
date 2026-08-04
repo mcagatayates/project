@@ -20,11 +20,15 @@ KAP'ın **aylık** raporunda var. Yani "hangi hisseyi aldılar" sorusunun
 gerçek, hisse-bazlı cevabı ayda yaklaşık 1 kez güncellenir — günlük mesaj
 her zaman gelir ama çoğu gün sadece varlık sınıfı trendini içerir.
 
-KAP tarafındaki rapor ayrıştırma (parsing) mantığı, bu kodun yazıldığı
-ortamdan kap.org.tr'ye erişim engelli olduğu için **canlı test edilemeden**
-yazıldı. İlk birkaç gerçek çalıştırmadan sonra (Actions loglarına bakarak)
-muhtemelen ince ayar gerekecek. Otomatik ayrıştırma başarısız olursa bot
-çökmez — sadece "yeni rapor var ama otomatik okunamadı, işte link" der.
+Hem TEFAS hem KAP tarafındaki istekler, bu kodun yazıldığı ortamdan
+tefas.gov.tr/kap.org.tr'ye erişim engelli olduğu için **canlı test
+edilemeden** yazıldı — ilk gerçek çalıştırmada TEFAS eski (artık kapanmış)
+bir endpoint'e ve KAP tahmini bir endpoint'e gittiği için ikisi de
+hata verdi; bunlar GitHub'daki güncel açık kaynak TEFAS/KAP istemcilerinin
+kaynak kodu incelenerek doğru uç noktalarla düzeltildi. Yine de KAP
+tarafındaki rapor tablosu ayrıştırma mantığı best-effort'tur — otomatik
+ayrıştırma başarısız olursa bot çökmez, sadece "yeni rapor var ama
+otomatik okunamadı, işte link" der.
 
 ## Kurulum
 

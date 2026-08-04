@@ -6,15 +6,16 @@ published by fund management companies through KAP's standardized
 "Fon Portföy Dağılım Raporu" (Fund Portfolio Distribution Report), filed
 monthly, within ~6 business days after each month closes.
 
-IMPORTANT / KNOWN LIMITATION: this module could not be tested against
-live KAP responses while it was written — the sandbox this was built in
-has no network access to kap.org.tr. The disclosure-search endpoint and
-the report-parsing logic below follow KAP's publicly documented
-conventions as closely as possible, but treat this as a best-effort v1:
-if it fails to find or parse a report, it degrades to sending a plain
-link to the disclosure so you can check manually, rather than staying
-silent or crashing the whole daily job. Expect to tighten this up after
-seeing the first few real runs in the Actions logs.
+Endpoints below follow KAP's actual (undocumented but observed) JSON API:
+  - member roster lookup: /tr/api/company/items/{memberType}/{letter}
+  - disclosure search:    POST /tr/api/disclosure/members/byCriteria
+  - disclosure detail:    GET /tr/api/notification/attachment-detail/{id}
+
+This was written and could not be live-tested against kap.org.tr from the
+sandbox it was built in (no network access there) — treat it as
+best-effort. If a fund's report can't be found or its table can't be
+parsed, callers should fall back to sending a plain link rather than
+staying silent or crashing the whole daily job.
 """
 from __future__ import annotations
 
@@ -24,110 +25,169 @@ from typing import Any
 
 import requests
 
-KAP_DISCLOSURE_QUERY_URL = "https://www.kap.org.tr/tr/api/memberDisclosureQuery"
-KAP_DISCLOSURE_URL = "https://www.kap.org.tr/tr/Bildirim/{disclosure_id}"
+KAP_BASE = "https://www.kap.org.tr"
+WARMUP_URL = f"{KAP_BASE}/tr/bildirim-sorgu"
+SEARCH_URL = f"{KAP_BASE}/tr/api/disclosure/members/byCriteria"
+DETAIL_URL = f"{KAP_BASE}/tr/api/notification/attachment-detail/{{disclosure_index}}"
+ROSTER_URL = f"{KAP_BASE}/tr/api/company/items/{{member_type}}/{{letter}}"
+DISCLOSURE_PAGE_URL = f"{KAP_BASE}/tr/Bildirim/{{disclosure_index}}"
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Content-Type": "application/json; charset=UTF-8",
-    "Referer": "https://www.kap.org.tr/tr/bist-sirketler",
+    "Accept": "application/json, text/plain, */*",
+    "Referer": f"{KAP_BASE}/tr/bildirim-sorgu",
 }
 
 REPORT_SUBJECT_HINT = "portföy dağılım raporu"
+ROW_RE = re.compile(r"<tr\b.*?>(.*?)</tr>", re.IGNORECASE | re.DOTALL)
+CELL_RE = re.compile(r"<t[dh]\b.*?>(.*?)</t[dh]>", re.IGNORECASE | re.DOTALL)
+HTML_TAG_RE = re.compile(r"<[^>]+>")
+# A plausible BIST ticker is 3-6 uppercase Latin/Turkish letters (as its
+# own table cell, not just anywhere in text — avoids matching stray
+# uppercase header words like "TARİH" or "ORAN").
+TICKER_CELL_RE = re.compile(r"^[A-ZİÇŞĞÜÖ]{3,6}$")
+PERCENT_CELL_RE = re.compile(r"([0-9]{1,3}[.,][0-9]{1,4})\s*%?$")
 
-# Rows in the report table look like "GARAN  Garanti Bankası  8,42".
-# A plausible BIST ticker is 3-6 uppercase Latin letters.
-TICKER_ROW_RE = re.compile(
-    r"\b([A-ZİÇŞĞÜÖ]{3,6})\b[^%\n]{0,80}?([0-9]{1,2}[.,][0-9]{1,4})\s*%?"
-)
+_session: requests.Session | None = None
 
 
-def search_fund_disclosures(fund_name: str, days_back: int = 40) -> list[dict[str, Any]]:
-    """Search KAP for recent disclosures mentioning a fund by name.
+def _get_session() -> requests.Session:
+    """A warmed-up session — KAP's WAF is reportedly more tolerant of
+    requests that follow an initial page load rather than a cold POST."""
+    global _session
+    if _session is None:
+        _session = requests.Session()
+        _session.headers.update(HEADERS)
+        try:
+            _session.get(WARMUP_URL, timeout=15)
+        except requests.RequestException:
+            pass  # best-effort warmup; proceed regardless
+    return _session
 
-    Returns raw disclosure summary dicts as given by KAP (at least a
-    disclosure id, a title/subject, and a publish date) sorted newest
-    first. Filtering down to "Fon Portföy Dağılım Raporu" specifically
-    happens in `find_latest_portfolio_report`.
+
+def find_member_oid(name_contains: str, member_type: str = "PYS") -> str | None:
+    """Find a KAP member's mkkMemberOid by (partial, case-insensitive) name.
+
+    `member_type` defaults to "PYS" (portföy yönetim şirketi / portfolio
+    management company), which is what fund managers like Tera Portföy
+    are classified as.
     """
+    letter = name_contains.strip()[0].upper()
+    url = ROSTER_URL.format(member_type=member_type, letter=letter)
+    resp = _get_session().get(url, timeout=20)
+    resp.raise_for_status()
+    roster = resp.json()
+    items = roster if isinstance(roster, list) else roster.get("data", roster.get("result", []))
+
+    needle = name_contains.strip().lower()
+    for item in items or []:
+        title = str(item.get("title") or item.get("unvan") or "")
+        if needle in title.lower():
+            return item.get("mkkMemberOid") or item.get("memberOid")
+    return None
+
+
+def search_disclosures(member_oid: str, days_back: int = 40) -> list[dict[str, Any]]:
+    """Search KAP for recent disclosures filed by a given member."""
     end = dt.date.today()
     start = end - dt.timedelta(days=days_back)
     body = {
         "fromDate": start.isoformat(),
         "toDate": end.isoformat(),
-        "year": "",
-        "prd": "",
-        "term": "",
-        "ruleType": "",
-        "bdkReview": "",
-        "disclosureClass": "FON",
-        "index": "",
-        "market": "",
-        "isLate": "",
+        "mkkMemberOidList": [member_oid],
         "subjectList": [],
-        "mkkMemberOidList": [],
-        "inactiveMkkMemberOidList": [],
-        "bdkMemberOidList": [],
-        "mainSector": "",
-        "sector": "",
-        "subSector": "",
-        "memberType": "IGS",
-        "fromSrc": "N",
-        "srcCategory": "",
-        "text": fund_name,
     }
-    resp = requests.post(KAP_DISCLOSURE_QUERY_URL, json=body, headers=HEADERS, timeout=30)
+    resp = _get_session().post(SEARCH_URL, json=body, timeout=30)
     resp.raise_for_status()
     data = resp.json()
     disclosures = data if isinstance(data, list) else data.get("data", data.get("result", []))
     return disclosures or []
 
 
-def find_latest_portfolio_report(fund_name: str) -> dict[str, Any] | None:
+def find_latest_portfolio_report(member_oid: str, fund_name: str) -> dict[str, Any] | None:
     """Return the newest 'Fon Portföy Dağılım Raporu' disclosure for a fund, if any."""
-    disclosures = search_fund_disclosures(fund_name)
-    candidates = [
-        d
-        for d in disclosures
-        if REPORT_SUBJECT_HINT in str(d.get("title") or d.get("subject") or "").lower()
-    ]
+    disclosures = search_disclosures(member_oid)
+    fund_hint = fund_name.strip().lower()
+    candidates = []
+    for d in disclosures:
+        subject = str(d.get("subject") or "").lower()
+        if REPORT_SUBJECT_HINT not in subject:
+            continue
+        # A member files one report per fund; make sure this disclosure is
+        # about *this* fund, not a sibling one, by requiring some overlap
+        # between the fund's name and the disclosure subject.
+        fund_words = [w for w in fund_hint.split() if len(w) > 3]
+        if fund_words and not any(w in subject for w in fund_words):
+            continue
+        candidates.append(d)
+
     if not candidates:
         return None
 
-    def _key(d: dict[str, Any]) -> str:
-        return str(d.get("publishDate") or d.get("date") or "")
+    def _index(d: dict[str, Any]) -> int:
+        try:
+            return int(d.get("disclosureIndex") or 0)
+        except (TypeError, ValueError):
+            return 0
 
-    candidates.sort(key=_key, reverse=True)
+    candidates.sort(key=_index, reverse=True)
     return candidates[0]
 
 
-def disclosure_url(disclosure_id: str) -> str:
-    return KAP_DISCLOSURE_URL.format(disclosure_id=disclosure_id)
+def disclosure_url(disclosure_index: str) -> str:
+    return DISCLOSURE_PAGE_URL.format(disclosure_index=disclosure_index)
 
 
-def parse_stock_weights(disclosure_id: str) -> dict[str, float]:
-    """Best-effort extraction of {ticker: weight_percent} from a disclosure page.
+def parse_stock_weights(disclosure_index: str) -> dict[str, float]:
+    """Best-effort extraction of {ticker: weight_percent} from a disclosure.
 
-    Tries the HTML disclosure page first (KAP often renders the standard
-    "Fon Portföy Dağılım Raporu" form directly as an HTML table). Returns
-    an empty dict if nothing recognizable is found — callers should treat
-    that as "couldn't parse, fall back to sending the raw link" rather
-    than as "fund holds no stocks".
+    Returns an empty dict if nothing recognizable is found — callers
+    should treat that as "couldn't parse, fall back to sending the raw
+    link" rather than as "fund holds no stocks".
     """
-    url = disclosure_url(disclosure_id)
-    resp = requests.get(url, headers=HEADERS, timeout=30)
+    url = DETAIL_URL.format(disclosure_index=disclosure_index)
+    resp = _get_session().get(url, timeout=30)
     resp.raise_for_status()
-    html = resp.text
+    payload = resp.json()
+
+    entries = payload if isinstance(payload, list) else [payload]
+    html_parts: list[str] = []
+    for entry in entries:
+        body = entry.get("disclosureBody") if isinstance(entry, dict) else None
+        if isinstance(body, list):
+            html_parts.extend(str(b) for b in body)
+        elif isinstance(body, str):
+            html_parts.append(body)
+
+    html = " ".join(html_parts)
 
     weights: dict[str, float] = {}
-    for match in TICKER_ROW_RE.finditer(html):
-        ticker, pct_str = match.group(1), match.group(2)
-        try:
-            pct = float(pct_str.replace(",", "."))
-        except ValueError:
+    for row_match in ROW_RE.finditer(html):
+        cells = [
+            HTML_TAG_RE.sub("", cell).strip()
+            for cell in CELL_RE.findall(row_match.group(1))
+        ]
+        if len(cells) < 2:
             continue
-        # Guard against picking up incidental uppercase words (headers,
-        # currency codes) by requiring a plausible weight range.
-        if 0 < pct <= 100:
+
+        ticker = next((c for c in cells if TICKER_CELL_RE.match(c)), None)
+        if ticker is None:
+            continue
+
+        pct = None
+        for cell in cells:
+            m = PERCENT_CELL_RE.search(cell)
+            if m:
+                try:
+                    candidate = float(m.group(1).replace(",", "."))
+                except ValueError:
+                    continue
+                if 0 < candidate <= 100:
+                    pct = candidate
+                    break
+        if pct is not None:
             weights[ticker] = pct
+
     return weights
