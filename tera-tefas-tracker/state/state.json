@@ -1,15 +1,15 @@
 {
   "kap_monthly": {},
   "kap_transactions": {
-    "last_seen_index": 1636000
+    "last_seen_index": 1642343
   },
   "tefas_daily": {
     "FSU": {
-      "date": "2026-08-03",
+      "date": "2026-08-04",
       "weights": {
-        "byf": 37.18,
-        "hs": 19.92,
-        "yyf": 42.9
+        "byf": 38.63,
+        "hs": 18.54,
+        "yyf": 42.83
       }
     },
     "T3B": {
