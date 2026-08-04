@@ -138,10 +138,15 @@ def check_kap_transactions(state: dict, errors: list[str]) -> list[str]:
             )
             continue
 
-        lines.append(
-            f"🔔 <b>{', '.join(funds)}</b> fonu/fonları → <b>{', '.join(companies)}</b> "
-            f"hissesinde pay alım/satım bildirimi ({date})\n{url}"
-        )
+        # One line per fund, stacked, rather than joining multiple funds
+        # into a single comma-separated line — easier to scan when a
+        # disclosure covers several Tera funds at once.
+        company_str = ", ".join(companies)
+        for fund in funds:
+            lines.append(
+                f"🔔 <b>{fund}</b> → <b>{company_str}</b> hissesinde pay alım/satım "
+                f"bildirimi ({date})\n{url}"
+            )
 
     state["kap_transactions"]["last_seen_index"] = max_index
     return lines
