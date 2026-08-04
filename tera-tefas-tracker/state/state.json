@@ -2,7 +2,7 @@
   "kap_monthly": {},
   "tefas_daily": {
     "FSU": {
-      "date": null,
+      "date": "2026-08-03",
       "weights": {
         "byf": 37.18,
         "hs": 19.92,
@@ -10,7 +10,7 @@
       }
     },
     "T3B": {
-      "date": null,
+      "date": "2026-08-04",
       "weights": {
         "fb": 4.57,
         "gsykb": 4.07,
@@ -22,14 +22,14 @@
       }
     },
     "THF": {
-      "date": null,
+      "date": "2026-08-04",
       "weights": {
         "hs": 92.54,
         "vint": 7.46
       }
     },
     "TLV": {
-      "date": null,
+      "date": "2026-08-04",
       "weights": {
         "btas": 28.87,
         "d": 16.69,
@@ -39,7 +39,7 @@
       }
     },
     "TLY": {
-      "date": null,
+      "date": "2026-08-03",
       "weights": {
         "fb": 4.72,
         "hs": 79.11,
@@ -51,7 +51,7 @@
       }
     },
     "TMV": {
-      "date": null,
+      "date": "2026-08-03",
       "weights": {
         "fb": 0.33,
         "hs": 55.38,
@@ -63,7 +63,7 @@
       }
     },
     "TP2": {
-      "date": null,
+      "date": "2026-08-03",
       "weights": {
         "bpp": 12.99,
         "dt": 10.19,
