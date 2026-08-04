@@ -6,16 +6,27 @@ published by fund management companies through KAP's standardized
 "Fon Portföy Dağılım Raporu" (Fund Portfolio Distribution Report), filed
 monthly, within ~6 business days after each month closes.
 
-Endpoints below follow KAP's actual (undocumented but observed) JSON API:
-  - member roster lookup: /tr/api/company/items/{memberType}/{letter}
-  - disclosure search:    POST /tr/api/disclosure/members/byCriteria
-  - disclosure detail:    GET /tr/api/notification/attachment-detail/{id}
+Endpoints below follow KAP's actual JSON API, confirmed live via a
+one-off debug probe run in GitHub Actions (this module's original
+version guessed at a roster-by-type-and-letter lookup that turned out to
+always return an empty list — replaced with the working member/filter
+text search):
+  - member text search: GET /tr/api/member/filter/{query}
+  - disclosure search:  POST /tr/api/disclosure/members/byCriteria
+  - disclosure detail:  GET /tr/api/notification/attachment-detail/{id}
 
-This was written and could not be live-tested against kap.org.tr from the
-sandbox it was built in (no network access there) — treat it as
-best-effort. If a fund's report can't be found or its table can't be
-parsed, callers should fall back to sending a plain link rather than
-staying silent or crashing the whole daily job.
+The KAP filer for Tera's funds is "TERA YATIRIM MENKUL DEĞERLER A.Ş."
+(their brokerage entity, not a separately-named portfolio manager) —
+confirmed via /tr/api/member/filter/tera, mkkMemberOid hardcoded below
+since it's a stable identifier and avoids a lookup round-trip on every
+run.
+
+The disclosure-detail parsing (turning a report into per-stock weights)
+could not be live-tested — no real "Fon Portföy Dağılım Raporu" was
+found in the search window at the time this was written. Treat that part
+as best-effort: if a fund's report can't be found or its table can't be
+parsed, callers fall back to sending a plain link rather than staying
+silent or crashing the whole daily job.
 """
 from __future__ import annotations
 
@@ -29,8 +40,11 @@ KAP_BASE = "https://www.kap.org.tr"
 WARMUP_URL = f"{KAP_BASE}/tr/bildirim-sorgu"
 SEARCH_URL = f"{KAP_BASE}/tr/api/disclosure/members/byCriteria"
 DETAIL_URL = f"{KAP_BASE}/tr/api/notification/attachment-detail/{{disclosure_index}}"
-ROSTER_URL = f"{KAP_BASE}/tr/api/company/items/{{member_type}}/{{letter}}"
+MEMBER_FILTER_URL = f"{KAP_BASE}/tr/api/member/filter/{{query}}"
 DISCLOSURE_PAGE_URL = f"{KAP_BASE}/tr/Bildirim/{{disclosure_index}}"
+
+# TERA YATIRIM MENKUL DEĞERLER A.Ş. — confirmed via /tr/api/member/filter/tera
+TERA_MENKUL_MEMBER_OID = "4028e4a141733b56014178115f7e51e7"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -67,36 +81,19 @@ def _get_session() -> requests.Session:
     return _session
 
 
-# KAP member-type codes worth trying when we don't know exactly how an
-# entity is classified: "YK" covers brokerages/investment firms (e.g. a
-# "Menkul Değerler A.Ş." that also runs fund management as a business
-# line), "PYS" is dedicated portfolio management companies, "IGS" is
-# BIST-listed companies.
-DEFAULT_MEMBER_TYPES = ("YK", "PYS", "IGS")
+def find_member_oid(name_contains: str) -> str | None:
+    """Find a KAP member's mkkMemberOid by (partial, case-insensitive) name
+    via KAP's free-text member search."""
+    query = name_contains.strip()
+    resp = _get_session().get(MEMBER_FILTER_URL.format(query=query), timeout=20)
+    resp.raise_for_status()
+    items = resp.json()
 
-
-def find_member_oid(name_contains: str, member_types: tuple[str, ...] = DEFAULT_MEMBER_TYPES) -> str | None:
-    """Find a KAP member's mkkMemberOid by (partial, case-insensitive) name.
-
-    Tries each member type in `member_types` in turn since KAP's
-    classification of a given company (brokerage vs. dedicated portfolio
-    manager vs. listed company) isn't something we can know for certain
-    without querying.
-    """
-    letter = name_contains.strip()[0].upper()
-    needle = name_contains.strip().lower()
-
-    for member_type in member_types:
-        url = ROSTER_URL.format(member_type=member_type, letter=letter)
-        resp = _get_session().get(url, timeout=20)
-        if not resp.ok:
-            continue
-        roster = resp.json()
-        items = roster if isinstance(roster, list) else roster.get("data", roster.get("result", []))
-        for item in items or []:
-            title = str(item.get("title") or item.get("unvan") or "")
-            if needle in title.lower():
-                return item.get("mkkMemberOid") or item.get("memberOid")
+    needle = query.lower()
+    for item in items or []:
+        title = str(item.get("title") or "")
+        if needle in title.lower():
+            return item.get("mkkMemberOid")
     return None
 
 

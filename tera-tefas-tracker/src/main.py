@@ -103,10 +103,16 @@ def check_tefas_daily(state: dict, errors: list[str]) -> list[str]:
 def check_kap_monthly(state: dict, errors: list[str]) -> list[str]:
     lines = []
 
-    member_oid = kap_client.find_member_oid("TERA MENKUL DEĞERLER")
+    # Hardcoded, confirmed mkkMemberOid for TERA YATIRIM MENKUL DEĞERLER
+    # A.Ş. (the brokerage entity that funds Tera's KAP filings) — avoids a
+    # lookup round-trip every run. Fall back to a live search only if that
+    # ever stops matching (e.g. KAP re-issues member OIDs).
+    member_oid = kap_client.TERA_MENKUL_MEMBER_OID or kap_client.find_member_oid(
+        "TERA YATIRIM MENKUL DEĞERLER"
+    )
     if member_oid is None:
         errors.append(
-            "KAP'ta 'Tera Menkul Değerler' üyesi bulunamadı, aylık hisse kontrolü atlandı."
+            "KAP'ta 'Tera Yatırım Menkul Değerler' üyesi bulunamadı, aylık hisse kontrolü atlandı."
         )
         return lines
 
