@@ -1,11 +1,9 @@
-"""Temporary diagnostic script — download a recent TLY 'Yatırımcı Bilgi
-Formu' PDF from teraportfoy.com and extract its text to check whether it
-contains a per-stock portfolio breakdown. Not part of the daily job;
-delete once a working approach is confirmed.
+"""Temporary diagnostic script — check the general monthly "Fon Bülteni"
+PDF (covers all Tera funds) for a per-fund, per-stock holdings table.
+Not part of the daily job; delete once a working approach is confirmed.
 """
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
 
@@ -22,43 +20,20 @@ session.headers.update(
     }
 )
 
-PDF_LINK_RE = re.compile(r'href="([^"]*\.pdf[^"]*)"', re.IGNORECASE)
+url = "https://www.teraportfoy.com/media/3tvhobgl/aral%C4%B1k_fon_bulteni_-1-20260123_101502.pdf"
+print(f"=== Downloading {url} ===", flush=True)
+resp = session.get(url, timeout=30)
+print("HTTP status:", resp.status_code, "bytes:", len(resp.content), flush=True)
 
-page_url = "https://www.teraportfoy.com/fonlarimiz/serbest-fonlarimiz/tera-portfoy-birinci-serbest-fon-tly"
-print(f"=== Fetching {page_url} ===", flush=True)
-resp = session.get(page_url, timeout=20)
-print("HTTP status:", resp.status_code, flush=True)
-pdfs = sorted(set(PDF_LINK_RE.findall(resp.text)))
-print(f"unique PDF links: {len(pdfs)}", flush=True)
-for p in pdfs:
-    print(" -", p, flush=True)
+tmp_path = Path("/tmp/bulten.pdf")
+tmp_path.write_bytes(resp.content)
 
-# Find the most recent "ybf" (yatırımcı bilgi formu) link and the most
-# recent "portfoy_dagilim" / "dagilim" link if one exists among them.
-ybf_links = [p for p in pdfs if "ybf" in p.lower()]
-dagilim_links = [p for p in pdfs if "dagilim" in p.lower() or "dağılım" in p.lower()]
-print(f"\nybf_links: {ybf_links}", flush=True)
-print(f"dagilim_links: {dagilim_links}", flush=True)
-
-targets = []
-if ybf_links:
-    targets.append(("YBF", ybf_links[-1]))
-if dagilim_links:
-    targets.append(("DAGILIM", dagilim_links[-1]))
-
-for label, rel_url in targets:
-    full_url = "https://www.teraportfoy.com" + rel_url if rel_url.startswith("/") else rel_url
-    print(f"\n=== Downloading {label}: {full_url} ===", flush=True)
-    try:
-        pdf_resp = session.get(full_url, timeout=30)
-        print("HTTP status:", pdf_resp.status_code, "bytes:", len(pdf_resp.content), flush=True)
-        tmp_path = Path(f"/tmp/{label}.pdf")
-        tmp_path.write_bytes(pdf_resp.content)
-        with pdfplumber.open(tmp_path) as pdf:
-            print(f"page count: {len(pdf.pages)}", flush=True)
-            for i, page in enumerate(pdf.pages[:6]):
-                text = page.extract_text() or ""
-                print(f"--- page {i+1} text ---", flush=True)
-                print(text[:2500], flush=True)
-    except Exception as exc:  # noqa: BLE001
-        print(f"{label} probe failed:", repr(exc), flush=True)
+with pdfplumber.open(tmp_path) as pdf:
+    print(f"page count: {len(pdf.pages)}", flush=True)
+    for i, page in enumerate(pdf.pages):
+        text = page.extract_text() or ""
+        if "TLY" in text or "TMV" in text or any(t in text for t in ["Hisse", "Pay Oranı", "OZATD", "ISVEA"]):
+            print(f"\n--- page {i+1} (mentions TLY/TMV/hisse) ---", flush=True)
+            print(text[:3000], flush=True)
+        else:
+            print(f"--- page {i+1}: no TLY/TMV/hisse keyword, first 150 chars: {text[:150]!r}", flush=True)
