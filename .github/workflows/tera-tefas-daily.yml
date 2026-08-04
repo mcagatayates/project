@@ -1,0 +1,41 @@
+name: Tera TEFAS Daily Check
+
+on:
+  schedule:
+    # 06:00 UTC = 09:00 Europe/Istanbul (Türkiye no longer observes DST),
+    # weekdays only, ~1 hour before BIST opens at 10:00.
+    - cron: "0 6 * * 1-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tera-tefas-tracker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run daily check and send Telegram message
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python src/main.py
+
+      - name: Persist state
+        run: |
+          git config user.name "tera-tefas-tracker-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add state/state.json
+          git diff --cached --quiet || git commit -m "Update Tera TEFAS tracker state [skip ci]"
+          git push
