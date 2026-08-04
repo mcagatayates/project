@@ -1,5 +1,8 @@
 {
   "kap_monthly": {},
+  "kap_transactions": {
+    "last_seen_index": 1642343
+  },
   "tefas_daily": {
     "FSU": {
       "date": "2026-08-03",
