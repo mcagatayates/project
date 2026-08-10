@@ -2,3 +2,7 @@ requests>=2.31
 Pillow>=10.0
 python-dotenv>=1.0
 schedule>=1.2
+
+# Tarayıcı modu (API'siz) için — bkz. README "Tarayıcı Modu" bölümü.
+# Kurulumdan sonra bir kez `playwright install chromium` çalıştırın.
+playwright>=1.45

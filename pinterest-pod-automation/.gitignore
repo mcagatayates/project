@@ -4,6 +4,8 @@ __pycache__/
 log.txt
 log.txt.*
 state/*.json
+state/browser_profile/
+state/debug_screenshots/
 pinler/*
 !pinler/.gitkeep
 tasarimlar/*

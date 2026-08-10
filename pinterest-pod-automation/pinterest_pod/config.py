@@ -19,6 +19,13 @@ def _get_int(name: str, default: int) -> int:
     return int(value)
 
 
+def _get_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None or value.strip() == "":
+        return default
+    return value.strip().lower() in ("1", "true", "evet", "yes")
+
+
 @dataclass(frozen=True)
 class Config:
     # Pinterest OAuth kimlik bilgileri
@@ -36,6 +43,11 @@ class Config:
     daily_pin_limit: int
     min_minutes_between_pins: int
 
+    # Tarayıcı modu (API'siz) ayarları
+    browser_headless: bool
+    browser_manual_confirm: bool
+    browser_slowmo_ms: int
+
     # Dosya yolları
     csv_path: Path
     output_dir: Path
@@ -50,6 +62,10 @@ class Config:
     def posting_state_path(self) -> Path:
         return self.state_dir / "posting_state.json"
 
+    @property
+    def browser_profile_dir(self) -> Path:
+        return self.state_dir / "browser_profile"
+
 
 def load_config() -> Config:
     return Config(
@@ -62,6 +78,9 @@ def load_config() -> Config:
         font_path=os.getenv("FONT_PATH", ""),
         daily_pin_limit=_get_int("DAILY_PIN_LIMIT", 4),
         min_minutes_between_pins=_get_int("MIN_MINUTES_BETWEEN_PINS", 180),
+        browser_headless=_get_bool("BROWSER_HEADLESS", False),
+        browser_manual_confirm=_get_bool("BROWSER_MANUAL_CONFIRM", True),
+        browser_slowmo_ms=_get_int("BROWSER_SLOWMO_MS", 150),
         csv_path=BASE_DIR / os.getenv("CSV_PATH", "urunler.csv"),
         output_dir=BASE_DIR / os.getenv("OUTPUT_DIR", "pinler"),
         log_path=BASE_DIR / os.getenv("LOG_PATH", "log.txt"),
