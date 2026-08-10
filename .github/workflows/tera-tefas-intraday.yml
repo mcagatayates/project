@@ -1,0 +1,42 @@
+name: Tera TEFAS Intraday Check
+
+on:
+  schedule:
+    # Every hour on the half-hour, 10:30-17:30 Europe/Istanbul (BIST is
+    # open 10:00-18:00), weekdays only. Offset by :30 from the 06:00 UTC
+    # daily-check cron so the two workflows never overlap.
+    - cron: "30 7-14 * * 1-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tera-tefas-tracker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run intraday KAP check and send Telegram message if there's news
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python src/main.py --intraday
+
+      - name: Persist state
+        run: |
+          git config user.name "tera-tefas-tracker-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add state/state.json
+          git diff --cached --quiet || git commit -m "Update Tera TEFAS tracker state [skip ci]"
+          git push

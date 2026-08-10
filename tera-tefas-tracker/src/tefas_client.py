@@ -129,6 +129,14 @@ def fetch_allocation_history(
     return records
 
 
+def fund_price(record: dict[str, Any]) -> float | None:
+    """Extract the fund's per-share price (NAV) from a TEFAS record, if present."""
+    for key in ("fiyat", "FIYAT", "price", "Price"):
+        if key in record and isinstance(record[key], (int, float)):
+            return float(record[key])
+    return None
+
+
 def allocation_weights(record: dict[str, Any]) -> dict[str, float]:
     """Extract {column_name: weight} for numeric, plausible-percentage fields."""
     weights: dict[str, float] = {}

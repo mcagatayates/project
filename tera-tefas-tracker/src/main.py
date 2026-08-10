@@ -17,6 +17,7 @@ against.
 """
 from __future__ import annotations
 
+import argparse
 import datetime as dt
 import json
 import sys
@@ -71,13 +72,16 @@ def check_tefas_daily(state: dict, errors: list[str]) -> list[str]:
                 continue
 
             latest_weights = tefas_client.allocation_weights(latest)
+            latest_price = tefas_client.fund_price(latest)
             state.setdefault("tefas_daily", {})
 
+            stored = state["tefas_daily"].get(code)
             if prev is not None:
                 prev_weights = tefas_client.allocation_weights(prev)
+                prev_price = tefas_client.fund_price(prev)
             else:
-                stored = state["tefas_daily"].get(code)
                 prev_weights = stored["weights"] if stored else {}
+                prev_price = stored.get("price") if stored else None
 
             gains = []
             for col, new_val in latest_weights.items():
@@ -87,16 +91,24 @@ def check_tefas_daily(state: dict, errors: list[str]) -> list[str]:
                     gains.append((col, old_val, new_val, delta))
             gains.sort(key=lambda g: g[3], reverse=True)
 
+            price_str = ""
+            if latest_price is not None and prev_price:
+                price_pct = (latest_price - prev_price) / prev_price * 100
+                price_str = f" | fiyat {latest_price:.6f} ({price_pct:+.2f}%)"
+            elif latest_price is not None:
+                price_str = f" | fiyat {latest_price:.6f}"
+
             if gains:
                 parts = ", ".join(
                     f"{col} {old:.1f}%→{new:.1f}% (+{delta:.1f})"
                     for col, old, new, delta in gains
                 )
-                lines.append(f"📈 <b>{code}</b> ({name}): {parts}")
+                lines.append(f"📈 <b>{code}</b> ({name}): {parts}{price_str}")
 
             state["tefas_daily"][code] = {
                 "date": latest.get("tarih") or latest.get("TARIH"),
                 "weights": latest_weights,
+                "price": latest_price,
             }
         except Exception as exc:  # noqa: BLE001 - keep other funds running
             errors.append(f"{code}: TEFAS kontrolü başarısız — {exc}")
@@ -164,17 +176,36 @@ def check_kap_transactions(state: dict, errors: list[str]) -> list[str]:
     return lines
 
 
-def main() -> None:
+def main(intraday: bool = False) -> None:
     state = load_state()
     errors: list[str] = []
 
-    daily_lines = check_tefas_daily(state, errors)
+    now_str = dt.datetime.now().strftime("%d.%m.%Y %H:%M")
     transaction_lines = check_kap_transactions(state, errors)
 
+    if intraday:
+        # Market-hours run: TEFAS allocation data doesn't update intraday
+        # (it's an end-of-day NAV calc), so re-checking it hourly would
+        # only ever report "no change" — skip it here, the daily run
+        # already covers it. Also stay quiet unless there's something to
+        # say, so this doesn't spam the chat every hour.
+        save_state(state)
+        if not transaction_lines and not errors:
+            return
+        sections = [f"<b>Tera Portföy Gün İçi Takip — {now_str}</b>"]
+        if transaction_lines:
+            sections.append(
+                "\n".join(["", "<u>KAP pay alım/satım bildirimleri:</u>", *transaction_lines])
+            )
+        if errors:
+            sections.append("\n".join(["", "<u>⚠️ Kontrol edilemeyenler:</u>", *errors]))
+        telegram_notify.send_message("\n".join(sections))
+        return
+
+    daily_lines = check_tefas_daily(state, errors)
     save_state(state)
 
-    today_str = dt.date.today().strftime("%d.%m.%Y")
-    sections = [f"<b>Tera Portföy TEFAS Takip — {today_str}</b>"]
+    sections = [f"<b>Tera Portföy TEFAS Takip — {now_str}</b>"]
 
     if daily_lines:
         sections.append("\n".join(["", "<u>Günlük varlık sınıfı değişimi:</u>", *daily_lines]))
@@ -193,8 +224,16 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--intraday",
+        action="store_true",
+        help="Market-hours run: KAP-only check, silent unless there's news.",
+    )
+    args = parser.parse_args()
+
     try:
-        main()
+        main(intraday=args.intraday)
     except Exception:
         # Last-resort: make sure a broken run is at least visible in Actions
         # logs with a full traceback, instead of failing silently.
