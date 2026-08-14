@@ -34,6 +34,7 @@ from app.pipeline.concept_generation import create_concept
 from app.pipeline.etsy_package import build_etsy_package
 from app.pipeline.genome_ideation import create_genome
 from app.pipeline.mockup_factory import generate_all_mockups
+from app.pipeline.opportunity_engine import fetch_current_opportunities
 from app.pipeline.print_factory import export_all_ratios
 from app.pipeline.production_controller import build_daily_plan
 from app.pipeline.runner import run_concept_to_selection
@@ -112,7 +113,8 @@ async def run_daily_simulation(
     mockup_template_ids = mockup_template_ids or ["living_room_light_frame"]
 
     plan = build_daily_plan(session, plan_date=plan_date, target_final_designs=target_final_designs)
-    assignments = plan_collections(session, plan=plan)
+    opportunities = await fetch_current_opportunities(session)
+    assignments = plan_collections(session, plan=plan, opportunities=opportunities)
 
     result = DailySimulationResult(plan=plan, assignments=assignments)
     concept_index = 0

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -20,6 +21,9 @@ from app.db.models.generation import GenerationCandidate
 from app.db.models.production import DailyProductionPlan
 from app.pipeline.production_controller import get_production_policy
 
+if TYPE_CHECKING:
+    from app.pipeline.opportunity_engine import Opportunity
+
 
 @dataclass
 class SlotAssignment:
@@ -27,6 +31,7 @@ class SlotAssignment:
     slots: int
     bucket: str
     parent_artwork_id: uuid.UUID | None = None
+    archetype_signal_note: str | None = None
 
 
 def approved_count_for_collection(session: Session, collection_id: uuid.UUID) -> int:
@@ -125,10 +130,23 @@ def _top_recent_artwork(session: Session, *, exclude_collection_ids: set[uuid.UU
     return None
 
 
-def plan_collections(session: Session, *, plan: DailyProductionPlan) -> list[SlotAssignment]:
+def plan_collections(
+    session: Session, *, plan: DailyProductionPlan, opportunities: list[Opportunity] | None = None
+) -> list[SlotAssignment]:
+    # Imported lazily to avoid a module-level cycle: opportunity_engine
+    # imports open_capacity from this module.
+    from app.pipeline.archetype_affinity import rank_archetypes_by_opportunities
+
     policy = get_production_policy()
     archetypes = policy["bootstrap_collection_archetypes"]
     allocation = dict(plan.portfolio_allocation)
+
+    # Only genuine external market signals bias which archetype gets
+    # bootstrapped -- the Opportunity Engine's "continue proven collection"
+    # fallback (no external signal available) is not a market signal and
+    # must not be treated as one here.
+    market_opportunities = [o for o in (opportunities or []) if o.rationale.startswith("market signal (")]
+    ranked_archetypes = rank_archetypes_by_opportunities(archetypes, market_opportunities)
 
     for c in _existing_collections(session, CollectionStatus.DISCOVERY.value):
         maybe_graduate_collection(session, c)
@@ -197,19 +215,24 @@ def plan_collections(session: Session, *, plan: DailyProductionPlan) -> list[Slo
     remaining = experimental_needed
     archetype_idx = 0
     while remaining > 0:
+        signal_note: str | None = None
         if discovery_collections:
             c = discovery_collections.pop(0)
         else:
-            archetype = archetypes[archetype_idx % len(archetypes)]
+            archetype, signal_note = ranked_archetypes[archetype_idx % len(ranked_archetypes)]
             archetype_idx += 1
             existing_names = {a.collection.name for a in assignments}
-            if archetype["name"] in existing_names and archetype_idx <= len(archetypes):
+            if archetype["name"] in existing_names and archetype_idx <= len(ranked_archetypes):
                 continue
             c = _bootstrap_collection(session, archetype)
         cap = open_capacity(session, c)
         take = min(cap, remaining) if cap > 0 else remaining
         take = max(take, 1)
-        assignments.append(SlotAssignment(collection=c, slots=take, bucket="EXPERIMENTAL_OR_WILDCARD"))
+        assignments.append(
+            SlotAssignment(
+                collection=c, slots=take, bucket="EXPERIMENTAL_OR_WILDCARD", archetype_signal_note=signal_note
+            )
+        )
         remaining -= take
 
     plan.collections = [
@@ -220,6 +243,7 @@ def plan_collections(session: Session, *, plan: DailyProductionPlan) -> list[Slo
             "bucket": a.bucket,
             "mode": a.collection.mode,
             "parent_artwork_id": str(a.parent_artwork_id) if a.parent_artwork_id else None,
+            "archetype_signal_note": a.archetype_signal_note,
         }
         for a in assignments
     ]

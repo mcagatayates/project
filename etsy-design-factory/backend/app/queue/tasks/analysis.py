@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 
 from app.pipeline.collection_planner import plan_collections
+from app.pipeline.opportunity_engine import fetch_current_opportunities
 from app.pipeline.production_controller import build_daily_plan
 from app.queue.base_task import ResilientTask
 from app.queue.celery_app import celery_app
@@ -32,6 +34,7 @@ def plan_collections_task(self, plan_id: str) -> int:
         plan = session.get(DailyProductionPlan, uuid.UUID(plan_id))
         if plan is None:
             raise ValueError(f"DailyProductionPlan {plan_id} not found")
-        assignments = plan_collections(session, plan=plan)
+        opportunities = asyncio.run(fetch_current_opportunities(session))
+        assignments = plan_collections(session, plan=plan, opportunities=opportunities)
         count = len(assignments)
     return count

@@ -99,6 +99,29 @@ the always-on bestseller/evergreen queries.
 an agent-driven research job can ask "what should I look for today"
 instead of carrying its own copy of the calendar logic.
 
+The daily cycle now consumes this ranking, closing the loop the
+"Explicit non-goals" section used to name as open: before
+`app/pipeline/collection_planner.py::plan_collections()` bootstraps a new
+DISCOVERY collection for an EXPERIMENTAL/WILDCARD slot, it asks
+`app/pipeline/opportunity_engine.py::fetch_current_opportunities()` for
+today's ranked real signals and biases which bootstrap archetype
+(`config/production_policy.yaml`) gets used via
+`app/pipeline/archetype_affinity.py::rank_archetypes_by_opportunities()` --
+a bounded, stopword-filtered word-overlap score between each archetype's
+declared vocabulary (name/thesis/target_aesthetic/medium/subject_families)
+and each real signal's description, weighted by the signal's confidence.
+Only genuine external signals participate (the Opportunity Engine's
+"continue proven collection" fallback for when no signal exists is
+explicitly excluded, so an empty signal day never fabricates a bias); when
+nothing overlaps, bootstrapping falls back to the archetypes' declared
+order exactly as before. Every biased pick is traceable: the winning
+archetype's note (which signal, at what confidence) is stored on the
+`SlotAssignment` and written into `DailyProductionPlan.collections`.
+Wired into both `app/queue/tasks/analysis.py::plan_collections_task` (the
+real Celery path) and `app/simulation/daily_simulation.py` (so the
+acceptance test exercises the same call shape, with an empty signal set on
+a fresh test DB producing identical behavior to before this change).
+
 Commercial feedback (`CommercialFeedbackAdapter`) still ships only the
 Null adapter — see "Explicit non-goals" below for why that one is
 different (it needs Etsy credentials, not just web search).
@@ -147,14 +170,18 @@ These are named, not silently skipped, so nothing is mistaken for "done":
   adapter is written against `CommercialFeedbackAdapter` and a real Etsy
   credential is supplied.
 - Market intelligence, by contrast, **does** have a working real path now
-  (see Phase 5 above) — but no daily-cycle wiring calls it automatically
-  yet. `production_controller.build_daily_plan()` does not currently
-  consult `market_signals` when computing portfolio allocation; the
-  Opportunity Engine ranks real signals correctly (verified end-to-end),
-  but nothing yet feeds that ranking back into slot-count math. Closing
-  this loop (e.g. biasing which bootstrap archetype an EXPERIMENTAL slot
-  gets toward a high-confidence signal's category) is the next concrete
-  step here, not a rewrite.
+  (see Phase 5 above), and it is wired into the daily cycle: real, ranked
+  opportunities bias which bootstrap archetype a new EXPERIMENTAL/WILDCARD
+  collection gets (`app/pipeline/archetype_affinity.py`, see Phase 5
+  above for details). `production_controller.build_daily_plan()` still
+  computes portfolio *allocation* (slot counts per bucket) purely from
+  `config/production_policy.yaml` fractions + budget, not from
+  `market_signals` — a real signal changes *which* collection an
+  EXPERIMENTAL slot goes to, not *how many* EXPERIMENTAL slots exist
+  today. Feeding signal strength back into the slot-count math itself
+  (e.g. temporarily growing the EXPERIMENTAL fraction when an unusually
+  strong signal appears) is a bigger policy decision than this repository
+  makes unilaterally, and is left for a deliberate follow-up.
 - The Redis-backed, cross-process rate limiter and dead-letter queue
   described in `docs/PROVIDER_ARCHITECTURE.md` / `docs/EVENTS.md` are
   implemented as in-memory/best-effort in this single-process-per-worker

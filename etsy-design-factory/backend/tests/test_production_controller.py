@@ -100,6 +100,46 @@ def test_collection_graduates_after_enough_approvals(db_session, collection):
     assert collection.status == CollectionStatus.DISCOVERY.value
 
 
+def test_collection_planner_biases_bootstrap_toward_matching_market_signal(db_session):
+    from app.pipeline.opportunity_engine import Opportunity
+
+    plan = build_daily_plan(db_session, plan_date=datetime.date(2026, 8, 18), target_final_designs=10)
+    opportunities = [
+        Opportunity(
+            description="Desert horizon mid-century wall art is climbing Etsy search this month",
+            rationale="market signal (serpapi:google_search:etsy wall art trends)",
+            confidence=0.8,
+        )
+    ]
+    assignments = plan_collections(db_session, plan=plan, opportunities=opportunities)
+
+    assert assignments[0].collection.name == "Desert Horizon"
+    assert assignments[0].archetype_signal_note is not None
+    assert "market signal" in assignments[0].archetype_signal_note
+    assert plan.collections[0]["archetype_signal_note"] is not None
+
+
+def test_collection_planner_ignores_fallback_continue_opportunities_for_bootstrap_bias(db_session):
+    """The Opportunity Engine's "continue proven collection" fallback
+    (no external signal available) must not be mistaken for a real market
+    signal when biasing which archetype gets bootstrapped."""
+    from app.pipeline.opportunity_engine import Opportunity
+
+    plan = build_daily_plan(db_session, plan_date=datetime.date(2026, 8, 19), target_final_designs=10)
+    fallback_opportunities = [
+        Opportunity(
+            description="continue Desert Horizon",
+            rationale="no external market signal available; proven collection has open capacity",
+            confidence=0.5,
+        )
+    ]
+    assignments = plan_collections(db_session, plan=plan, opportunities=fallback_opportunities)
+
+    # Declared order ("Botanical Calm" first) is unaffected by the fallback.
+    assert assignments[0].collection.name == "Botanical Calm"
+    assert assignments[0].archetype_signal_note is None
+
+
 def test_open_capacity_shrinks_as_artworks_are_approved(db_session, collection):
     import uuid
     from datetime import timezone

@@ -48,3 +48,17 @@ def rank_opportunities(session: Session, *, report: MarketIntelligenceReport) ->
 
     opportunities.sort(key=lambda o: o.confidence, reverse=True)
     return opportunities
+
+
+async def fetch_current_opportunities(session: Session, *, within_days: int = 7) -> list[Opportunity]:
+    """Convenience wrapper the daily cycle calls before bootstrapping new
+    collections: reads whatever real market signals have actually been
+    persisted recently (see DatabaseMarketIntelligenceAdapter) and ranks
+    them. This is the one place that turns "signals exist in the DB" into
+    "here's today's ranked opportunity list" for a caller that just wants
+    the answer, not the adapter wiring."""
+    from app.pipeline.market_intelligence import DatabaseMarketIntelligenceAdapter, run_market_intelligence
+
+    adapter = DatabaseMarketIntelligenceAdapter(session, within_days=within_days)
+    report = await run_market_intelligence(adapter)
+    return rank_opportunities(session, report=report)
