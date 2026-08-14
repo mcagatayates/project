@@ -1,0 +1,52 @@
+# Daily Production Controller policy. Nothing here is hardcoded into
+# app/pipeline/production_controller.py -- allocations are computed from
+# these fractions via a largest-remainder split so they always sum exactly
+# to target_final_designs, whatever that target is on a given day.
+#
+# These are an INITIAL hypothesis (see docs/SYSTEM_VISION.md /
+# docs/ROADMAP.md "Explicit non-goals"): commercial_learning.py is meant to
+# adjust them from real outcomes over time. That learning loop is not
+# implemented yet -- these fractions are a static starting point.
+default_target_final_designs: 30
+
+portfolio_allocation_fractions:
+  PROVEN: 0.50
+  GROWING: 0.27
+  EXPERIMENTAL: 0.10
+  WINNER_MUTATION: 0.10
+  WILDCARD: 0.03
+
+graduation:
+  min_approved_for_production: 5
+  min_acceptance_rate: 0.35
+
+collection_capacity_default: 12
+
+# Used only to bootstrap new DISCOVERY collections when EXPERIMENTAL /
+# WILDCARD slots have no existing collection with open capacity -- e.g. on
+# day one, when no history exists yet. Real collection ideation is the
+# Collection Planner's job once Market Intelligence / Opportunity Engine
+# signals exist (Phase 5); this is a deterministic fallback, not the
+# system's only source of new collections.
+bootstrap_collection_archetypes:
+  - name: "Botanical Calm"
+    thesis: "Quiet, minimal botanical studies in muted natural palettes for renters who want warmth without clutter."
+    target_aesthetic: "japandi botanical"
+    target_customer_hypothesis: "modern-boho renters, 25-40, small apartments"
+    medium: "gouache"
+    subject_families: ["botanical"]
+    palette_boundaries: {allowed_palette_names: ["sage-clay", "seafoam-neutral"]}
+  - name: "Desert Horizon"
+    thesis: "Warm, sun-baked desert landscapes and abstract horizon lines for a mid-century-leaning living room."
+    target_aesthetic: "mid-century desert minimalism"
+    target_customer_hypothesis: "design-forward homeowners, 30-50"
+    medium: "digital_painting"
+    subject_families: ["landscape", "abstract"]
+    palette_boundaries: {allowed_palette_names: ["ochre-ink", "dusk-plum"]}
+  - name: "Coastal Ink"
+    thesis: "Linework studies of coastal motifs in restrained ink palettes for a calm entryway or reading nook."
+    target_aesthetic: "modern linework"
+    target_customer_hypothesis: "minimalist gift-buyers, 25-45"
+    medium: "ink"
+    subject_families: ["landscape", "animal"]
+    palette_boundaries: {allowed_palette_names: ["dusk-plum", "seafoam-neutral"]}

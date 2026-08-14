@@ -7,6 +7,8 @@ os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:///:memory:")
 os.environ.setdefault("PROVIDER_MODE", "fake")
 os.environ.setdefault("CELERY_TASK_ALWAYS_EAGER", "true")
 os.environ.setdefault("STORAGE_BACKEND", "local")
+os.environ.setdefault("CELERY_RETRY_BACKOFF_MAX", "0.02")
+os.environ.setdefault("CELERY_MAX_RETRIES", "3")
 
 import shutil  # noqa: E402
 import tempfile  # noqa: E402

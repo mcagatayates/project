@@ -12,9 +12,14 @@ from app.db.models.enums import RepairOutcome
 class FailureRecord(UUIDPKMixin, CreatedAtMixin, Base):
     __tablename__ = "failure_records"
 
-    generation_candidate_id: Mapped[uuid.UUID] = mapped_column(
-        GUID(), ForeignKey("generation_candidates.id"), index=True
+    # Nullable: a provider-exhausted Generation failure (see
+    # docs/AGENT_CONTRACTS.md "Generation" failure policy) has no candidate
+    # row to attach to -- generation never reached GENERATED. concept_id is
+    # always set so the failure is still traceable to a concept.
+    generation_candidate_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), ForeignKey("generation_candidates.id"), nullable=True, index=True
     )
+    concept_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), ForeignKey("concepts.id"), nullable=True, index=True)
     failure_class: Mapped[str] = mapped_column(String(30), index=True)
     detected_problems: Mapped[list] = mapped_column(JSONVariant, default=list)
     diagnosis_reasoning: Mapped[str] = mapped_column(String(2000))
