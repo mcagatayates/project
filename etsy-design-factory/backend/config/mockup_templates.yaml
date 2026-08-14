@@ -1,0 +1,23 @@
+# Mockup Factory templates. Purely presentational compositing -- these are
+# never written back onto the master artwork asset (docs/DOMAIN_MODEL.md
+# Mockup entity: "generated from the print master but stored as a wholly
+# separate asset; the master Artwork image is never overwritten").
+templates:
+  - id: "living_room_light_frame"
+    wall_color: "#EFEAE2"
+    frame_color: "#2B2B2B"
+    frame_width_ratio: 0.03
+    canvas_size: [1000, 1000]
+    artwork_area: [0.28, 0.15, 0.72, 0.80]  # x0, y0, x1, y1 as fraction of canvas
+  - id: "studio_dark_frame"
+    wall_color: "#3A3A3A"
+    frame_color: "#D8CFC0"
+    frame_width_ratio: 0.025
+    canvas_size: [1000, 1000]
+    artwork_area: [0.25, 0.12, 0.75, 0.82]
+  - id: "gallery_no_frame"
+    wall_color: "#FFFFFF"
+    frame_color: null
+    frame_width_ratio: 0.0
+    canvas_size: [1000, 1000]
+    artwork_area: [0.30, 0.18, 0.70, 0.78]
