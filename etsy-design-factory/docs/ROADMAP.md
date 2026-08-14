@@ -60,13 +60,32 @@ Market intelligence / commercial-feedback adapters that return `null`
 rather than fabricate data when unconfigured, Champion/Challenger family
 tracking, learning engine that adjusts Production Controller allocation
 from real outcomes only.
-**Status: complete as far as this system can go without live credentials.**
+**Status: complete, including a working real market-intelligence path.**
 `app/pipeline/{market_intelligence,opportunity_engine,performance_ingestion,
 champion_challenger,commercial_learning}.py`,
-`app/providers/commercial_feedback.py`,
-`app/memory/commercial_memory.py`. Every adapter's *only* shipped
-implementation is a Null adapter returning no data — see "Explicit
-non-goals" below for what that means in practice.
+`app/providers/{commercial_feedback,web_search_market_intelligence}.py`,
+`app/memory/{commercial_memory,market_signal_memory}.py`,
+`app/db/models/market_signal.py`, `app/api/routes/market_intelligence.py`.
+
+Market intelligence has two real (non-Null) paths in, both landing in the
+same `market_signals` table and both read back by
+`DatabaseMarketIntelligenceAdapter`:
+1. **Code-level**: `WebSearchMarketIntelligenceAdapter` calls a real search
+   API (SerpAPI) inline from a Celery worker — needs `SERPAPI_KEY`.
+2. **Externally submitted**: `POST /api/market-intelligence/signals` lets
+   an out-of-process researcher write real findings directly — this is
+   what an agent-driven web research job (a Claude session with web
+   search, running on a schedule) is meant to call. See "Agent-driven
+   market research" below for how to wire that up once the backend is
+   deployed somewhere reachable. Verified end-to-end during development:
+   a real web search for current Etsy wall-art trends, posted through
+   this endpoint, persisted, and read back through the Opportunity Engine
+   producing correctly-ranked opportunities — no fabricated data at any
+   step.
+
+Commercial feedback (`CommercialFeedbackAdapter`) still ships only the
+Null adapter — see "Explicit non-goals" below for why that one is
+different (it needs Etsy credentials, not just web search).
 
 ## Acceptance test
 
@@ -102,17 +121,24 @@ These are named, not silently skipped, so nothing is mistaken for "done":
   config supports it (`PROVIDER_ARCHITECTURE.md`), but shipping with a
   vendor key baked in is out of scope and against the "never hardcode
   credentials" requirement.
-- No real market-intelligence or commercial-feedback data source.
-  `app/pipeline/market_intelligence.py` and
-  `app/providers/commercial_feedback.py` ship a `Null*Adapter` that always
-  returns "no data" — by design, since fabricating trend or sales data
-  would violate the mission's explicit "never fabricate unavailable
-  metrics" requirement. Concretely, this means Champion/Challenger
-  promotion and collection graduation-by-acceptance-rate are real and
-  tested, but nothing in this system will *autonomously* discover a
-  trend or receive real Etsy sales numbers until a real adapter is
-  written against `CommercialFeedbackAdapter`/`MarketIntelligenceAdapter`
-  and a real API credential is supplied.
+- No real commercial-feedback (sales/favorites/views) data source.
+  `app/providers/commercial_feedback.py` ships only
+  `NullCommercialFeedbackAdapter` — this one genuinely needs Etsy
+  credentials (OAuth token + shop ID), which this system must never
+  assume it has. Champion/Challenger promotion and collection
+  graduation-by-acceptance-rate are real and tested against whatever
+  `CommercialObservation` rows exist, but none will exist until a real
+  adapter is written against `CommercialFeedbackAdapter` and a real Etsy
+  credential is supplied.
+- Market intelligence, by contrast, **does** have a working real path now
+  (see Phase 5 above) — but no daily-cycle wiring calls it automatically
+  yet. `production_controller.build_daily_plan()` does not currently
+  consult `market_signals` when computing portfolio allocation; the
+  Opportunity Engine ranks real signals correctly (verified end-to-end),
+  but nothing yet feeds that ranking back into slot-count math. Closing
+  this loop (e.g. biasing which bootstrap archetype an EXPERIMENTAL slot
+  gets toward a high-confidence signal's category) is the next concrete
+  step here, not a rewrite.
 - The Redis-backed, cross-process rate limiter and dead-letter queue
   described in `docs/PROVIDER_ARCHITECTURE.md` / `docs/EVENTS.md` are
   implemented as in-memory/best-effort in this single-process-per-worker
@@ -126,6 +152,50 @@ These are named, not silently skipped, so nothing is mistaken for "done":
   implemented; `app/providers/factory.py` raises a clear `ProviderError`
   naming the missing adapter rather than silently falling back to fake
   behavior outside of `PROVIDER_MODE=fake`/`APP_ENV=test`.
+
+## Agent-driven market research
+
+`POST /api/market-intelligence/signals` (guarded by
+`MARKET_SIGNAL_INGESTION_TOKEN` when set — see `.env.example`) is designed
+to be called by a scheduled Claude session that does real web research and
+reports what it actually found. This was **not** wired up as a live
+recurring job during development, because doing so requires a backend
+deployed somewhere reachable from outside this sandbox — creating a
+recurring trigger against an ephemeral dev container would just fail
+silently forever. It **was** verified working manually: a real
+`WebSearch` for current Etsy wall-art trends, submitted through this exact
+endpoint against a locally running instance, persisted to `market_signals`
+and read back correctly-ranked through the Opportunity Engine.
+
+Once the backend is deployed somewhere with a stable URL, wire up the
+daily job with a Routine (via the `create_trigger` MCP tool available to
+Claude Code sessions) along these lines:
+
+```
+create_trigger(
+  name="Design Factory market research",
+  cron_expression="0 13 * * *",  # once daily, in UTC
+  create_new_session_on_fire=true,
+  prompt="""
+    Research current Etsy wall-art / home-decor trends using web search
+    (queries like "etsy wall art trends 2026", "trending home decor color
+    palette", "popular interior design style"). For each real finding,
+    extract: category (one of the query topics above), a one-sentence
+    description of what you actually found, a confidence 0-1 reflecting
+    how strong the signal looked, and source (a URL or "web_search:<date>").
+    Then POST them as one batch to:
+      https://<your-deployed-backend>/api/market-intelligence/signals
+      Header: X-Ingestion-Token: <the configured MARKET_SIGNAL_INGESTION_TOKEN>
+      Body: {"signals": [{"category": ..., "description": ..., "confidence": ..., "source": ...}, ...]}
+    Only submit things you actually found in search results this run --
+    never invent a trend to fill out the batch.
+  """,
+)
+```
+
+The `NextJS` frontend or a dashboard widget can then show
+`GET /api/market-intelligence/signals` to make this research visible to
+the human, and it already feeds `rank_opportunities()` for free.
 
 ## Environment & running it
 

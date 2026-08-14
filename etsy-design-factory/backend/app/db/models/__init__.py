@@ -13,6 +13,7 @@ from app.db.models.experiment import Experiment
 from app.db.models.failure import FailureRecord, RepairAttempt
 from app.db.models.generation import GenerationCandidate, GenerationJob
 from app.db.models.genome import DesignGenome
+from app.db.models.market_signal import MarketSignal
 from app.db.models.production import DailyProductionPlan
 
 __all__ = [
@@ -36,4 +37,5 @@ __all__ = [
     "CostEvent",
     "ProviderHealthLog",
     "Approval",
+    "MarketSignal",
 ]

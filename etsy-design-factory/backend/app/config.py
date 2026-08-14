@@ -48,6 +48,27 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     frontend_origin: str = "http://localhost:3000"
 
+    # Real web-search-based Market Intelligence adapter (see
+    # app/providers/web_search_market_intelligence.py). Unset by default --
+    # the daily cycle falls back to DatabaseMarketIntelligenceAdapter
+    # (whatever has been ingested via the API) when this isn't configured,
+    # never to a fabricated trend.
+    serpapi_key: str | None = None
+    market_research_queries: list[str] = [
+        "etsy wall art trends",
+        "trending home decor color palette",
+        "popular interior design style",
+        "trending printable wall art",
+    ]
+    # Shared-secret gate on POST /api/market-intelligence/signals -- that
+    # endpoint lets an OUT-OF-PROCESS caller (an agent-driven web research
+    # job, not just the trusted frontend) write data that later influences
+    # real production decisions, so unlike the rest of this dashboard-only
+    # API it should not be left open in any deployment reachable by anyone
+    # but that one job. Unset (None) leaves it open, which is only
+    # acceptable for local/dev use.
+    market_signal_ingestion_token: str | None = None
+
     @property
     def is_test(self) -> bool:
         return self.app_env == "test"

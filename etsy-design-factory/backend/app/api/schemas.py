@@ -93,3 +93,31 @@ class ProductionPlanResponse(BaseModel):
     winner_mutation_slots: int
     budget_cap_usd: float
     rationale: str
+
+
+class MarketSignalIn(BaseModel):
+    category: str = Field(min_length=1, max_length=100)
+    description: str = Field(min_length=1, max_length=2000)
+    confidence: float = Field(ge=0.0, le=1.0)
+    source: str = Field(
+        min_length=1,
+        max_length=200,
+        description="Where this actually came from, e.g. 'claude_web_research:2026-08-14' or a URL",
+    )
+
+
+class MarketSignalIngestRequest(BaseModel):
+    signals: list[MarketSignalIn] = Field(min_length=1, max_length=100)
+
+
+class MarketSignalOut(BaseModel):
+    id: uuid.UUID
+    category: str
+    description: str
+    confidence: float
+    source: str
+    created_at: datetime
+
+
+class MarketSignalListResponse(BaseModel):
+    items: list[MarketSignalOut]

@@ -146,6 +146,18 @@ LESS_TEXTURE|MORE_MINIMAL|MORE_DETAILED|CREATE_VARIATIONS), actor,
 resulting_genome_id (nullable FK — set when the action mutates the
 genome and re-queues), notes (nullable), created_at`.
 
+### market_signals
+`id, category, description, confidence NUMERIC(4,3), source, created_at`.
+One row per real market-intelligence finding — never written except by
+`app/pipeline/market_intelligence.py:ingest_signals()`, called either from
+a code-level adapter (`WebSearchMarketIntelligenceAdapter`) or from
+`POST /api/market-intelligence/signals` (an out-of-process researcher,
+e.g. an agent-driven web research job — see `ROADMAP.md` "Agent-driven
+market research"). `source` records exact provenance (e.g.
+`serpapi:google_search:<query>` or `claude_web_research:<date>`) so every
+signal is traceable to what actually produced it.
+Index: `(source)`.
+
 ## Migration strategy
 
 Alembic, one linear history under `backend/migrations/versions/`. Every
