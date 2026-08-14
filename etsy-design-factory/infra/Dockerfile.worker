@@ -1,0 +1,18 @@
+FROM python:3.11-slim AS base
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libjpeg62-turbo-dev zlib1g-dev gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY backend/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY backend/ ./
+
+# Queue name is injected via command override in docker-compose.yml so the
+# same image scales each queue (analysis/concepts/generation/vision_qc/
+# repair/image_processing/mockups/exports) independently -- see
+# docs/EVENTS.md.
+CMD ["celery", "-A", "app.queue.celery_app", "worker", "-Q", "analysis,concepts,generation,vision_qc,repair,image_processing,mockups,exports", "--concurrency=4", "--loglevel=INFO"]

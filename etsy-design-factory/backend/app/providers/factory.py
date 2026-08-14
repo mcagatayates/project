@@ -62,14 +62,21 @@ def build_registry(on_health_event: HealthEventHook | None = None, config_path: 
     path = Path(config_path or settings.providers_config_path)
     raw = yaml.safe_load(path.read_text()) if path.exists() else {"roles": {}}
 
+    force_fake = settings.provider_mode == "fake" or settings.is_test
+
     registry = ProviderRegistry(on_health_event=on_health_event)
     for role, cfg in raw.get("roles", {}).items():
         adapter_kind = cfg.get("adapter", "fake")
         instance = _build_adapter(adapter_kind, role)
+        # Rate limits in providers.yaml model REAL vendor limits. A fake
+        # adapter has no such constraint -- honoring the configured limit
+        # anyway would make a 30-design simulation take minutes waiting on
+        # a token bucket sized for a paid API that was never called.
+        rate_per_minute = 1_000_000.0 if force_fake else float(cfg.get("rate_per_minute", 120.0))
         spec = AdapterSpec(
             name=f"{adapter_kind}:{role}",
             instance=instance,
-            rate_per_minute=float(cfg.get("rate_per_minute", 120.0)),
+            rate_per_minute=rate_per_minute,
             max_retries=int(cfg.get("max_retries", 3)),
         )
         registry.register_role(role, primary=spec)

@@ -48,9 +48,17 @@ def _find_conflict(
         return SimilarityMatch(
             reference_id, phash_dist, g_score, p_score, f"near-duplicate creative DNA (genome similarity {g_score:.2f})"
         )
+    # Same-collection designs legitimately share medium + subject category by
+    # construction (that IS the collection's identity), which already
+    # contributes a chunk of genome_similarity before subject/style/layout
+    # are even considered. This compound check exists for "same palette AND
+    # otherwise clearly related," not "same palette AND shares the two
+    # fields every design in this collection shares" -- hence requiring
+    # near-parity with the standalone genome-similarity bar (0.95x), not a
+    # loose 0.8x fraction of it.
     if (
         p_score >= thresholds["palette_similarity_threshold"]
-        and g_score >= thresholds["genome_similarity_threshold"] * 0.8
+        and g_score >= thresholds["genome_similarity_threshold"] * 0.95
     ):
         return SimilarityMatch(
             reference_id,

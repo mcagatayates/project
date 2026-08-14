@@ -20,7 +20,7 @@ graduation:
   min_approved_for_production: 5
   min_acceptance_rate: 0.35
 
-collection_capacity_default: 12
+collection_capacity_default: 6
 
 # Used only to bootstrap new DISCOVERY collections when EXPERIMENTAL /
 # WILDCARD slots have no existing collection with open capacity -- e.g. on
@@ -50,3 +50,24 @@ bootstrap_collection_archetypes:
     medium: "ink"
     subject_families: ["landscape", "animal"]
     palette_boundaries: {allowed_palette_names: ["dusk-plum", "seafoam-neutral"]}
+  - name: "Geometric Studio"
+    thesis: "Bold geometric studies in confident color for a design-forward home office or studio wall."
+    target_aesthetic: "bauhaus geometric"
+    target_customer_hypothesis: "creative professionals, 25-40"
+    medium: "vector"
+    subject_families: ["geometric", "abstract"]
+    palette_boundaries: {allowed_palette_names: ["ochre-ink", "sage-clay"]}
+  - name: "Quiet Menagerie"
+    thesis: "Gentle animal portraits and still-life studies for a nursery or reading corner."
+    target_aesthetic: "watercolor naturalism"
+    target_customer_hypothesis: "new parents and gift-buyers, 28-45"
+    medium: "watercolor"
+    subject_families: ["animal", "still_life"]
+    palette_boundaries: {allowed_palette_names: ["seafoam-neutral", "dusk-plum"]}
+  - name: "Archive Print"
+    thesis: "Archival-feeling architectural and figurative studies with a vintage print quality."
+    target_aesthetic: "vintage archival"
+    target_customer_hypothesis: "design-literate renters and gift-buyers, 25-45"
+    medium: "risograph"
+    subject_families: ["architectural", "figurative"]
+    palette_boundaries: {allowed_palette_names: ["ochre-ink", "dusk-plum"]}
