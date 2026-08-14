@@ -1,0 +1,66 @@
+# Gift/decor occasions relevant to wall art, with how many weeks BEFORE
+# the date research should already be underway. lead_weeks is set from
+# typical Etsy print-on-demand practice: sellers who wait until the week
+# of a holiday to list seasonal designs miss most of its search volume --
+# buyers searching "Halloween wall art" start in August/September, not
+# late October. See app/pipeline/seasonal_calendar.py.
+#
+# month/day is the occasion's actual date; for date-range seasons
+# (e.g. "fall") the 1st of the season's core month is used as the
+# reference date.
+occasions:
+  - name: "Halloween"
+    month: 10
+    day: 31
+    lead_weeks: 12
+    keywords: ["halloween wall art", "halloween home decor trends", "spooky season etsy bestsellers"]
+  - name: "Thanksgiving"
+    month: 11
+    day: 27
+    lead_weeks: 10
+    keywords: ["thanksgiving wall art", "autumn harvest home decor trends"]
+  - name: "Christmas / Holiday season"
+    month: 12
+    day: 25
+    lead_weeks: 16
+    keywords: ["christmas wall art etsy", "holiday season home decor trends", "winter wall art bestsellers"]
+  - name: "New Year"
+    month: 1
+    day: 1
+    lead_weeks: 6
+    keywords: ["new year wall art", "motivational poster trends january"]
+  - name: "Valentine's Day"
+    month: 2
+    day: 14
+    lead_weeks: 10
+    keywords: ["valentines day wall art", "romantic home decor trends etsy"]
+  - name: "Easter / Spring"
+    month: 4
+    day: 1
+    lead_weeks: 9
+    keywords: ["easter wall art", "spring home decor trends etsy"]
+  - name: "Mother's Day"
+    month: 5
+    day: 11
+    lead_weeks: 10
+    keywords: ["mothers day wall art gift", "etsy mothers day bestsellers"]
+  - name: "Father's Day"
+    month: 6
+    day: 15
+    lead_weeks: 8
+    keywords: ["fathers day wall art gift", "etsy fathers day bestsellers"]
+  - name: "Summer"
+    month: 6
+    day: 1
+    lead_weeks: 10
+    keywords: ["summer wall art trends", "coastal beach decor etsy bestsellers"]
+  - name: "Back to School"
+    month: 9
+    day: 1
+    lead_weeks: 8
+    keywords: ["dorm room wall art trends", "back to school decor etsy"]
+  - name: "Fall / Autumn"
+    month: 9
+    day: 22
+    lead_weeks: 10
+    keywords: ["fall wall art trends", "autumn color palette home decor etsy"]

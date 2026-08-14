@@ -9,6 +9,8 @@ actually submitted.
 
 from __future__ import annotations
 
+import datetime
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
@@ -17,10 +19,13 @@ from app.api.schemas import (
     MarketSignalIngestRequest,
     MarketSignalListResponse,
     MarketSignalOut,
+    ResearchPlanResponse,
+    ResearchQueryOut,
 )
 from app.config import get_settings
 from app.memory.market_signal_memory import recent_signals
 from app.pipeline.market_intelligence import OpportunitySignal, ingest_signals
+from app.pipeline.market_research_planner import build_research_plan
 
 router = APIRouter(prefix="/api/market-intelligence", tags=["market-intelligence"])
 
@@ -73,4 +78,21 @@ def list_signals(within_days: int = 7, session: Session = Depends(get_db)) -> Ma
             )
             for r in rows
         ]
+    )
+
+
+@router.get("/research-queries", response_model=ResearchPlanResponse)
+def get_research_queries() -> ResearchPlanResponse:
+    """What to research today: continuous Etsy-bestseller tracking plus
+    whichever seasonal occasions (see config/seasonal_calendar.yaml) are
+    currently inside their research lead-time window. This is the
+    contract an agent-driven web research job should call FIRST each run
+    -- it owns "what to look for and why," real web search owns "actually
+    finding it," and POST /signals owns "recording what was actually
+    found." No step in that chain invents data."""
+    today = datetime.date.today()
+    plan = build_research_plan(today)
+    return ResearchPlanResponse(
+        plan_date=today.isoformat(),
+        queries=[ResearchQueryOut(query=rq.query, category=rq.category, reason=rq.reason) for rq in plan],
     )

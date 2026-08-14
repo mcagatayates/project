@@ -58,3 +58,16 @@ def test_submit_signals_validates_confidence_range(db_session):
         json={"signals": [{"category": "x", "description": "y", "confidence": 1.5, "source": "test"}]},
     )
     assert resp.status_code == 422
+
+
+def test_research_queries_endpoint_returns_todays_plan(db_session):
+    client = TestClient(app)
+    resp = client.get("/api/market-intelligence/research-queries")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "plan_date" in body
+    categories = {q["category"] for q in body["queries"]}
+    assert "bestseller_tracking" in categories
+    for q in body["queries"]:
+        assert q["query"]
+        assert q["reason"]

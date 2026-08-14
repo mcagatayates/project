@@ -1,0 +1,14 @@
+# Always-on research queries -- run every day regardless of season, per
+# the mission's "continuously track Etsy bestsellers in this category"
+# requirement. Seasonal/occasion queries (config/seasonal_calendar.yaml)
+# are added on top of these when an occasion is within its lead-time
+# window. See app/pipeline/market_research_planner.py.
+bestseller_tracking:
+  - "etsy bestseller wall art"
+  - "top selling wall art etsy this week"
+  - "etsy trending wall art"
+evergreen_trends:
+  - "etsy wall art trends"
+  - "trending home decor color palette"
+  - "popular interior design style"
+  - "trending printable wall art"

@@ -83,6 +83,22 @@ same `market_signals` table and both read back by
    producing correctly-ranked opportunities — no fabricated data at any
    step.
 
+Both paths query *what to research today* from
+`app/pipeline/market_research_planner.py`, not a static list:
+continuous Etsy-bestseller-tracking queries every day
+(`config/market_research_queries.yaml`) plus whichever seasonal
+occasions are currently inside their research lead-time window
+(`config/seasonal_calendar.yaml`, `app/pipeline/seasonal_calendar.py`) --
+e.g. Halloween starts appearing in the plan ~12 weeks out, not the week
+of, matching how Etsy print-on-demand sellers actually need to list
+seasonal designs well ahead of the search-volume spike. Verified live on
+2026-08-14: the plan correctly included Halloween (11.1 weeks out, inside
+its 12-week window) alongside Back to School and Fall/Autumn, on top of
+the always-on bestseller/evergreen queries.
+`GET /api/market-intelligence/research-queries` exposes this same plan so
+an agent-driven research job can ask "what should I look for today"
+instead of carrying its own copy of the calendar logic.
+
 Commercial feedback (`CommercialFeedbackAdapter`) still ships only the
 Null adapter — see "Explicit non-goals" below for why that one is
 different (it needs Etsy credentials, not just web search).
@@ -177,18 +193,24 @@ create_trigger(
   cron_expression="0 13 * * *",  # once daily, in UTC
   create_new_session_on_fire=true,
   prompt="""
-    Research current Etsy wall-art / home-decor trends using web search
-    (queries like "etsy wall art trends 2026", "trending home decor color
-    palette", "popular interior design style"). For each real finding,
-    extract: category (one of the query topics above), a one-sentence
-    description of what you actually found, a confidence 0-1 reflecting
-    how strong the signal looked, and source (a URL or "web_search:<date>").
-    Then POST them as one batch to:
-      https://<your-deployed-backend>/api/market-intelligence/signals
-      Header: X-Ingestion-Token: <the configured MARKET_SIGNAL_INGESTION_TOKEN>
-      Body: {"signals": [{"category": ..., "description": ..., "confidence": ..., "source": ...}, ...]}
+    1. GET https://<your-deployed-backend>/api/market-intelligence/research-queries
+       This returns today's query list: continuous Etsy-bestseller-tracking
+       queries every day, plus seasonal queries for any occasion (Halloween,
+       Christmas, ...) currently inside its research lead-time window --
+       already computed for you, don't guess what season it is.
+    2. Run a real web search for each query returned.
+    3. For each real finding, extract: category (use the query's own
+       category from step 1), a one-sentence description of what you
+       actually found, a confidence 0-1 reflecting how strong the signal
+       looked, and source (a URL or "web_search:<date>").
+    4. POST them as one batch to:
+       https://<your-deployed-backend>/api/market-intelligence/signals
+       Header: X-Ingestion-Token: <the configured MARKET_SIGNAL_INGESTION_TOKEN>
+       Body: {"signals": [{"category": ..., "description": ..., "confidence": ..., "source": ...}, ...]}
     Only submit things you actually found in search results this run --
-    never invent a trend to fill out the batch.
+    never invent a trend to fill out the batch, and don't skip the
+    seasonal queries from step 1 even if they look premature -- the
+    lead-time window is already accounted for server-side.
   """,
 )
 ```

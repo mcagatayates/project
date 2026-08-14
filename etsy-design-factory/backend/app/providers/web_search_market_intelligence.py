@@ -4,6 +4,11 @@ a search API by itself" option (see docs/ROADMAP.md) alongside the
 externally-submitted path (POST /api/market-intelligence/signals, meant
 for an agent-driven web research process).
 
+What to query with comes from app/pipeline/market_research_planner.py --
+continuous Etsy-bestseller tracking plus whichever seasonal occasions are
+currently inside their research lead-time window (see
+config/seasonal_calendar.yaml) -- never a fixed, season-blind query list.
+
 Ships against SerpAPI (https://serpapi.com) as a concrete, well-documented
 example of "a real search API" -- requires SERPAPI_KEY. Raises
 ProviderError with a clear message if unconfigured, following the same
@@ -13,10 +18,13 @@ pattern as every other unconfigured real vendor adapter in this codebase
 
 from __future__ import annotations
 
+import datetime
+
 import httpx
 
 from app.config import get_settings
 from app.pipeline.market_intelligence import OpportunitySignal
+from app.pipeline.market_research_planner import ResearchQuery, build_research_plan
 from app.providers.base import ProviderError
 
 _SERPAPI_URL = "https://serpapi.com/search"
@@ -35,11 +43,16 @@ class WebSearchMarketIntelligenceAdapter:
     name = "web_search_market_intelligence"
 
     def __init__(
-        self, *, api_key: str | None = None, queries: list[str] | None = None, client: httpx.AsyncClient | None = None
+        self,
+        *,
+        api_key: str | None = None,
+        research_plan: list[ResearchQuery] | None = None,
+        today: datetime.date | None = None,
+        client: httpx.AsyncClient | None = None,
     ):
         settings = get_settings()
         self._api_key = api_key if api_key is not None else settings.serpapi_key
-        self._queries = queries if queries is not None else settings.market_research_queries
+        self._plan = research_plan if research_plan is not None else build_research_plan(today)
         self._client = client
 
     async def fetch_signals(self) -> list[OpportunitySignal]:
@@ -54,38 +67,38 @@ class WebSearchMarketIntelligenceAdapter:
         owns_client = self._client is None
         client = self._client or httpx.AsyncClient(timeout=15.0)
         try:
-            for query in self._queries:
-                signals.extend(await self._fetch_one(client, query))
+            for rq in self._plan:
+                signals.extend(await self._fetch_one(client, rq))
         finally:
             if owns_client:
                 await client.aclose()
         return signals
 
-    async def _fetch_one(self, client: httpx.AsyncClient, query: str) -> list[OpportunitySignal]:
+    async def _fetch_one(self, client: httpx.AsyncClient, rq: ResearchQuery) -> list[OpportunitySignal]:
         try:
             resp = await client.get(
                 _SERPAPI_URL,
-                params={"q": query, "engine": "google", "api_key": self._api_key, "num": _MAX_RESULTS_PER_QUERY},
+                params={"q": rq.query, "engine": "google", "api_key": self._api_key, "num": _MAX_RESULTS_PER_QUERY},
             )
             resp.raise_for_status()
             data = resp.json()
         except httpx.HTTPError as exc:
-            raise ProviderError(f"search API request failed for query '{query}': {exc}") from exc
+            raise ProviderError(f"search API request failed for query '{rq.query}': {exc}") from exc
 
         results = data.get("organic_results", [])[:_MAX_RESULTS_PER_QUERY]
         signals: list[OpportunitySignal] = []
         for position, result in enumerate(results):
             title = result.get("title", "")
             snippet = result.get("snippet", "")
-            description = f"{title} — {snippet}".strip(" —") if snippet else title
+            description = f"{title} - {snippet}".strip(" -") if snippet else title
             if not description:
                 continue
             signals.append(
                 OpportunitySignal(
-                    category=query,
+                    category=rq.category,
                     description=description[:2000],
                     confidence=_confidence_from_position(position),
-                    source=f"serpapi:google_search:{query}",
+                    source=f"serpapi:google_search:{rq.query}",
                 )
             )
         return signals

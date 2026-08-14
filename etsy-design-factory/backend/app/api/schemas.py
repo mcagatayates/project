@@ -121,3 +121,14 @@ class MarketSignalOut(BaseModel):
 
 class MarketSignalListResponse(BaseModel):
     items: list[MarketSignalOut]
+
+
+class ResearchQueryOut(BaseModel):
+    query: str
+    category: str
+    reason: str
+
+
+class ResearchPlanResponse(BaseModel):
+    plan_date: str
+    queries: list[ResearchQueryOut]

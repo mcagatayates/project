@@ -52,14 +52,11 @@ class Settings(BaseSettings):
     # app/providers/web_search_market_intelligence.py). Unset by default --
     # the daily cycle falls back to DatabaseMarketIntelligenceAdapter
     # (whatever has been ingested via the API) when this isn't configured,
-    # never to a fabricated trend.
+    # never to a fabricated trend. What it searches FOR is computed by
+    # app/pipeline/market_research_planner.py from
+    # config/market_research_queries.yaml + config/seasonal_calendar.yaml,
+    # not a fixed list here.
     serpapi_key: str | None = None
-    market_research_queries: list[str] = [
-        "etsy wall art trends",
-        "trending home decor color palette",
-        "popular interior design style",
-        "trending printable wall art",
-    ]
     # Shared-secret gate on POST /api/market-intelligence/signals -- that
     # endpoint lets an OUT-OF-PROCESS caller (an agent-driven web research
     # job, not just the trusted frontend) write data that later influences
