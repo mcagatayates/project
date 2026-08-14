@@ -1,0 +1,32 @@
+# Provider role -> adapter mapping. See docs/PROVIDER_ARCHITECTURE.md.
+#
+# When APP_ENV=test or PROVIDER_MODE=fake, app/providers/factory.py
+# substitutes the `fake` adapter for every role regardless of what is
+# written here, so the pipeline never makes a paid call in CI.
+#
+# Real vendor adapters (openai_compatible, anthropic, stability, topaz,
+# s3, ...) are NOT implemented in this repository yet — see the "Explicit
+# non-goals" section of docs/ROADMAP.md. Wiring one in is a two-step change:
+# implement app/providers/<vendor>.py against the Protocol in
+# app/providers/base.py, then point the relevant role at it here.
+roles:
+  llm.cheap:
+    adapter: fake
+  llm.premium:
+    adapter: fake
+  image_gen.exploration:
+    adapter: fake
+    rate_per_minute: 60
+    max_retries: 3
+  image_gen.finalist:
+    adapter: fake
+    rate_per_minute: 20
+    max_retries: 3
+  vision.qc:
+    adapter: fake
+    rate_per_minute: 120
+  upscale.default:
+    adapter: fake
+    rate_per_minute: 30
+  storage.default:
+    adapter: local
