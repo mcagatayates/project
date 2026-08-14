@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.db.models.approval import Approval
 from app.db.models.artwork import Artwork
+from app.db.models.collection import Collection
+from app.db.models.concept import Concept
 from app.db.models.enums import ApprovalAction, CandidateStatus
 from app.db.models.generation import GenerationCandidate
 from app.db.models.genome import DesignGenome as DesignGenomeRow
@@ -42,12 +44,12 @@ def apply_approval(
     action: str,
     actor: str,
     notes: str | None = None,
-    collection,
-) -> tuple[Approval, Artwork | None, object | None]:
+    collection: Collection,
+) -> tuple[Approval, Artwork | None, Concept | None]:
     """Returns (approval_row, artwork_or_none, new_concept_or_none)."""
     resulting_genome_id: uuid.UUID | None = None
     artwork: Artwork | None = None
-    new_concept = None
+    new_concept: Concept | None = None
 
     if action == ApprovalAction.APPROVE.value:
         candidate.status = CandidateStatus.APPROVED.value

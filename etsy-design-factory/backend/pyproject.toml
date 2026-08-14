@@ -5,7 +5,11 @@ exclude = [".venv", "migrations/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
-ignore = ["E501", "UP017"]
+ignore = [
+    "E501",
+    "UP017",
+    "B008", # FastAPI's Depends()/Query() defaults are the intended idiom, not a bug
+]
 
 [tool.mypy]
 python_version = "3.11"

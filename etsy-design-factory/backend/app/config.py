@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     providers_config_path: str = str(CONFIG_DIR / "providers.yaml")
 
     log_level: str = "INFO"
+    frontend_origin: str = "http://localhost:3000"
 
     @property
     def is_test(self) -> bool:
