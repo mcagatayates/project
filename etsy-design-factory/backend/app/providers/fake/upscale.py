@@ -1,6 +1,7 @@
 """Deterministic fake UpscaleProvider — performs a REAL pixel resize (not a
 DPI-metadata trick) so print_factory's "never claim DPI edits increase
 resolution" invariant is exercised honestly even in test mode."""
+
 from __future__ import annotations
 
 import io
@@ -23,7 +24,7 @@ class FakeUpscaleProvider:
         w, h = img.size
         scale = target_long_edge_px / max(w, h)
         new_size = (max(1, round(w * scale)), max(1, round(h * scale)))
-        resized = img.resize(new_size, Image.LANCZOS)
+        resized = img.resize(new_size, Image.Resampling.LANCZOS)
         buf = io.BytesIO()
         resized.save(buf, format="PNG")
         data = buf.getvalue()

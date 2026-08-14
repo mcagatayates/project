@@ -6,7 +6,7 @@ from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.models.base import GUID, Base, CreatedAtMixin, JSONVariant, UUIDPKMixin
-from app.db.models.enums import FailureClass, RepairOutcome
+from app.db.models.enums import RepairOutcome
 
 
 class FailureRecord(UUIDPKMixin, CreatedAtMixin, Base):

@@ -11,6 +11,7 @@ duplicate/fatigue detection is app/pipeline/similarity_engine.py, which
 compares a candidate against the historical artwork library — that is the
 authoritative "creative fatigue protection" mechanism, not this score.
 """
+
 from __future__ import annotations
 
 import time
@@ -61,13 +62,42 @@ class FakeVisionProvider:
             return [f"{label} below acceptable floor ({value:.2f})"] if value < 0.5 else []
 
         scores = {
-            "aesthetic": DimensionScore(aesthetic, 0.8, f"contrast={contrast:.2f} saturation={saturation:.2f}", problems_for(aesthetic, "aesthetic")),
-            "originality": DimensionScore(originality, 0.6, f"edge_density={edges:.2f} (per-image proxy; see similarity_engine for real dedup)", problems_for(originality, "originality")),
-            "commercial_potential": DimensionScore(commercial_potential, 0.7, f"saturation={saturation:.2f} contrast={contrast:.2f}", problems_for(commercial_potential, "commercial_potential")),
-            "technical_quality": DimensionScore(technical_quality, 0.85, f"artifact_ratio={outlier_ratio:.3f}", problems_for(technical_quality, "technical_quality")),
-            "printability": DimensionScore(printability, 0.85, f"artifact_ratio={outlier_ratio:.3f}", problems_for(printability, "printability")),
-            "collection_fit": DimensionScore(collection_fit, 0.6, f"palette_hint={expected_palette_fit}", problems_for(collection_fit, "collection_fit")),
-            "diversity": DimensionScore(diversity, 0.5, f"edge_density={edges:.2f}", problems_for(diversity, "diversity")),
+            "aesthetic": DimensionScore(
+                aesthetic,
+                0.8,
+                f"contrast={contrast:.2f} saturation={saturation:.2f}",
+                problems_for(aesthetic, "aesthetic"),
+            ),
+            "originality": DimensionScore(
+                originality,
+                0.6,
+                f"edge_density={edges:.2f} (per-image proxy; see similarity_engine for real dedup)",
+                problems_for(originality, "originality"),
+            ),
+            "commercial_potential": DimensionScore(
+                commercial_potential,
+                0.7,
+                f"saturation={saturation:.2f} contrast={contrast:.2f}",
+                problems_for(commercial_potential, "commercial_potential"),
+            ),
+            "technical_quality": DimensionScore(
+                technical_quality,
+                0.85,
+                f"artifact_ratio={outlier_ratio:.3f}",
+                problems_for(technical_quality, "technical_quality"),
+            ),
+            "printability": DimensionScore(
+                printability, 0.85, f"artifact_ratio={outlier_ratio:.3f}", problems_for(printability, "printability")
+            ),
+            "collection_fit": DimensionScore(
+                collection_fit,
+                0.6,
+                f"palette_hint={expected_palette_fit}",
+                problems_for(collection_fit, "collection_fit"),
+            ),
+            "diversity": DimensionScore(
+                diversity, 0.5, f"edge_density={edges:.2f}", problems_for(diversity, "diversity")
+            ),
         }
 
         latency_ms = int((time.monotonic() - start) * 1000) + 1

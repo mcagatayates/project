@@ -20,7 +20,9 @@ class CostEvent(UUIDPKMixin, CreatedAtMixin, Base):
     generation_cost_usd: Mapped[float] = mapped_column(Numeric(10, 4), default=0)
     processing_cost_usd: Mapped[float] = mapped_column(Numeric(10, 4), default=0)
     project: Mapped[str] = mapped_column(String(100), default="etsy-wall-art")
-    collection_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), ForeignKey("collections.id"), nullable=True, index=True)
+    collection_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), ForeignKey("collections.id"), nullable=True, index=True
+    )
     design_genome_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), nullable=True)
     generation_candidate_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), nullable=True)
     is_simulated: Mapped[bool] = mapped_column(Boolean, default=False)

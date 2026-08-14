@@ -38,3 +38,6 @@ class GenerationCandidate(UUIDPKMixin, CreatedUpdatedMixin, Base):
     # Informational only (no FK constraint) to avoid a circular FK cycle with
     # repair_attempts.resulting_candidate_id, which is the canonical link.
     repair_attempt_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), nullable=True)
+    # Populated when tournament_selection or diversity_control moves this
+    # candidate to ELIMINATED, so every rejection stays traceable.
+    elimination_reason: Mapped[str | None] = mapped_column(String(2000), nullable=True)

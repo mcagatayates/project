@@ -1,7 +1,6 @@
 from app.genome.compiler import compile_prompt
 from app.genome.mutation import DEFAULT_MUTATION_SPEC, apply_approval_action, mutate
 from app.genome.schema import GenomeCreatedBy
-
 from tests.factories import make_genome
 
 

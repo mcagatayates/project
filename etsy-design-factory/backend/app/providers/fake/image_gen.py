@@ -14,6 +14,7 @@ Expected `params` keys (all optional, sensible defaults applied):
   quality_seed: float           0..1 (1.0 = clean/high quality, 0.0 = heavily flawed)
   variation_seed: int           distinguishes sibling candidates from the same concept
 """
+
 from __future__ import annotations
 
 import io
@@ -73,10 +74,10 @@ class FakeImageGenProvider:
             draw.point((x, y), fill=c)
 
         # quality artifacts: low quality_seed injects visible defects
-        artifact_count = int((1.0 - quality_seed) * 2600)
+        artifact_count = int(((1.0 - quality_seed) ** 1.6) * 2600)
         for _ in range(artifact_count):
             x, y = rng.randint(0, CANVAS - 1), rng.randint(0, CANVAS - 1)
-            r = rng.randint(2, 7)
+            r = rng.randint(2, 6)
             stray = (rng.randint(0, 255), rng.randint(0, 255), rng.randint(0, 255))
             draw.ellipse([x - r, y - r, x + r, y + r], fill=stray)
 

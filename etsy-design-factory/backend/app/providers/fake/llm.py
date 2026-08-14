@@ -3,6 +3,7 @@
 Used for Concept Gate (pass/reject reasoning) and any other cheap-LLM
 check in test mode. Never calls a network.
 """
+
 from __future__ import annotations
 
 import time

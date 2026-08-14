@@ -1,5 +1,6 @@
 """Central configuration. Never hardcode credentials — everything here is
 sourced from environment variables (see .env.example at repo root)."""
+
 from __future__ import annotations
 
 from functools import lru_cache

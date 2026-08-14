@@ -8,6 +8,7 @@ this module needing a DB session itself.
 
 See docs/PROVIDER_ARCHITECTURE.md.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -96,6 +97,14 @@ class ProviderRegistry:
 
         raise ProviderError(f"all adapters exhausted for role '{role}'") from last_error
 
-    def _report(self, provider: str, operation_type: str, success: bool, latency_ms: int, error_class: str | None, circuit_state: str) -> None:
+    def _report(
+        self,
+        provider: str,
+        operation_type: str,
+        success: bool,
+        latency_ms: int,
+        error_class: str | None,
+        circuit_state: str,
+    ) -> None:
         if self._on_health_event:
             self._on_health_event(provider, operation_type, success, latency_ms, error_class, circuit_state)

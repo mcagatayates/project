@@ -4,6 +4,7 @@ Kept as plain Python str-enums (stored as VARCHAR) rather than native
 Postgres ENUM types so SQLite (used in the test suite) and Postgres share
 one code path, and so new values don't require a migration.
 """
+
 from __future__ import annotations
 
 from enum import StrEnum

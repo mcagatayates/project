@@ -28,16 +28,39 @@ def test_fake_vision_scores_low_quality_seed_lower_on_technical_quality():
     gen = FakeImageGenProvider()
     vis = FakeVisionProvider()
 
-    good = asyncio.run(gen.generate(prompt="p", width=512, height=512, params={
-        "primary_color_hex": "#7C8B6F", "background_color_hex": "#F3EFE6", "quality_seed": 0.95, "variation_seed": 1,
-    }))
-    bad = asyncio.run(gen.generate(prompt="p", width=512, height=512, params={
-        "primary_color_hex": "#7C8B6F", "background_color_hex": "#F3EFE6", "quality_seed": 0.05, "variation_seed": 1,
-    }))
+    good = asyncio.run(
+        gen.generate(
+            prompt="p",
+            width=512,
+            height=512,
+            params={
+                "primary_color_hex": "#7C8B6F",
+                "background_color_hex": "#F3EFE6",
+                "quality_seed": 0.95,
+                "variation_seed": 1,
+            },
+        )
+    )
+    bad = asyncio.run(
+        gen.generate(
+            prompt="p",
+            width=512,
+            height=512,
+            params={
+                "primary_color_hex": "#7C8B6F",
+                "background_color_hex": "#F3EFE6",
+                "quality_seed": 0.05,
+                "variation_seed": 1,
+            },
+        )
+    )
 
-    rubric = VisionRubric(dimensions=("technical_quality",), context={
-        "expected_colors_rgb": [(124, 139, 111), (243, 239, 230)],
-    })
+    rubric = VisionRubric(
+        dimensions=("technical_quality",),
+        context={
+            "expected_colors_rgb": [(124, 139, 111), (243, 239, 230)],
+        },
+    )
     good_score = asyncio.run(vis.score(image_bytes=good.image_bytes, rubric=rubric))
     bad_score = asyncio.run(vis.score(image_bytes=bad.image_bytes, rubric=rubric))
 
@@ -68,7 +91,17 @@ class _AlwaysFailsAdapter:
 def test_registry_retries_then_succeeds():
     adapter = _FlakyThenGoodAdapter()
     registry = ProviderRegistry()
-    registry.register_role("llm.cheap", primary=AdapterSpec(name="flaky", instance=adapter, max_retries=5, backoff_base_s=0.001, backoff_max_s=0.01, rate_per_minute=6000))
+    registry.register_role(
+        "llm.cheap",
+        primary=AdapterSpec(
+            name="flaky",
+            instance=adapter,
+            max_retries=5,
+            backoff_base_s=0.001,
+            backoff_max_s=0.01,
+            rate_per_minute=6000,
+        ),
+    )
 
     result = asyncio.run(registry.call("llm.cheap", "complete", system="s", prompt="p"))
     assert result == "ok"
@@ -81,8 +114,24 @@ def test_registry_falls_back_to_secondary_adapter():
     registry = ProviderRegistry()
     registry.register_role(
         "llm.cheap",
-        primary=AdapterSpec(name="always_fails", instance=primary, max_retries=2, backoff_base_s=0.001, backoff_max_s=0.01, rate_per_minute=6000),
-        fallbacks=[AdapterSpec(name="flaky", instance=secondary, max_retries=5, backoff_base_s=0.001, backoff_max_s=0.01, rate_per_minute=6000)],
+        primary=AdapterSpec(
+            name="always_fails",
+            instance=primary,
+            max_retries=2,
+            backoff_base_s=0.001,
+            backoff_max_s=0.01,
+            rate_per_minute=6000,
+        ),
+        fallbacks=[
+            AdapterSpec(
+                name="flaky",
+                instance=secondary,
+                max_retries=5,
+                backoff_base_s=0.001,
+                backoff_max_s=0.01,
+                rate_per_minute=6000,
+            )
+        ],
     )
 
     result = asyncio.run(registry.call("llm.cheap", "complete", system="s", prompt="p"))
@@ -93,7 +142,14 @@ def test_registry_raises_when_all_adapters_exhausted():
     registry = ProviderRegistry()
     registry.register_role(
         "llm.cheap",
-        primary=AdapterSpec(name="always_fails", instance=_AlwaysFailsAdapter(), max_retries=2, backoff_base_s=0.001, backoff_max_s=0.01, rate_per_minute=6000),
+        primary=AdapterSpec(
+            name="always_fails",
+            instance=_AlwaysFailsAdapter(),
+            max_retries=2,
+            backoff_base_s=0.001,
+            backoff_max_s=0.01,
+            rate_per_minute=6000,
+        ),
     )
     with pytest.raises(ProviderError):
         asyncio.run(registry.call("llm.cheap", "complete", system="s", prompt="p"))

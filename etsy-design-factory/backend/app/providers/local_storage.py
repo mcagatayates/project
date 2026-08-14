@@ -2,6 +2,7 @@
 used in tests and available for self-hosted deployments without S3. Master
 artwork, ratio exports and mockups are always stored through this
 interface; the DB never holds binary image data."""
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -5,6 +5,7 @@ on PostgreSQL in production and as JSON on SQLite in tests, so the same
 models run against both without requiring a live Postgres instance for the
 unit test suite.
 """
+
 from __future__ import annotations
 
 import uuid

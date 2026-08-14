@@ -1,5 +1,6 @@
 """Import every model so Base.metadata is complete for Alembic autogenerate
 and for test-suite `create_all()`."""
+
 from app.db.models.approval import Approval
 from app.db.models.artwork import Artwork, EtsyListingPackage, Mockup, PrintExport
 from app.db.models.base import Base

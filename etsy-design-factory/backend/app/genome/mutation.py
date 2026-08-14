@@ -8,10 +8,13 @@ sampled from its own enum/range domain, optionally constrained to a
 collection's boundaries, so offspring stay recognizably related to the
 family they came from.
 """
+
 from __future__ import annotations
 
 import random
 import uuid
+from collections.abc import Callable
+from typing import Any
 
 from app.genome.schema import (
     Balance,
@@ -22,7 +25,6 @@ from app.genome.schema import (
     GenomeCreatedBy,
     LayoutType,
     PaletteDNA,
-    RenderingStyle,
     SubjectDNA,
     SurfaceTexture,
     Temperature,
@@ -46,15 +48,46 @@ DEFAULT_MUTATION_SPEC: MutationSpec = {
 }
 
 _SUBJECT_POOL = [
-    "monstera leaf study", "abstract arches", "sun and moon motif",
-    "wildflower field", "coastal cliffs", "terracotta vessels",
-    "citrus grove", "desert cacti", "flock of birds", "geometric mountains",
+    "monstera leaf study",
+    "abstract arches",
+    "sun and moon motif",
+    "wildflower field",
+    "coastal cliffs",
+    "terracotta vessels",
+    "citrus grove",
+    "desert cacti",
+    "flock of birds",
+    "geometric mountains",
 ]
 _PALETTE_POOL = [
-    {"palette_name": "sage-clay", "primary_colors": ["#7C8B6F"], "accent_colors": ["#C77B4D"], "background_color": "#F3EFE6", "temperature": Temperature.WARM},
-    {"palette_name": "dusk-plum", "primary_colors": ["#5B4B6A"], "accent_colors": ["#E8A87C"], "background_color": "#EDE6E3", "temperature": Temperature.COOL},
-    {"palette_name": "ochre-ink", "primary_colors": ["#C98A2C"], "accent_colors": ["#22303C"], "background_color": "#F7F1E1", "temperature": Temperature.WARM},
-    {"palette_name": "seafoam-neutral", "primary_colors": ["#89B7A5"], "accent_colors": ["#D9C6A5"], "background_color": "#FBFAF7", "temperature": Temperature.NEUTRAL},
+    {
+        "palette_name": "sage-clay",
+        "primary_colors": ["#7C8B6F"],
+        "accent_colors": ["#C77B4D"],
+        "background_color": "#F3EFE6",
+        "temperature": Temperature.WARM,
+    },
+    {
+        "palette_name": "dusk-plum",
+        "primary_colors": ["#5B4B6A"],
+        "accent_colors": ["#E8A87C"],
+        "background_color": "#EDE6E3",
+        "temperature": Temperature.COOL,
+    },
+    {
+        "palette_name": "ochre-ink",
+        "primary_colors": ["#C98A2C"],
+        "accent_colors": ["#22303C"],
+        "background_color": "#F7F1E1",
+        "temperature": Temperature.WARM,
+    },
+    {
+        "palette_name": "seafoam-neutral",
+        "primary_colors": ["#89B7A5"],
+        "accent_colors": ["#D9C6A5"],
+        "background_color": "#FBFAF7",
+        "temperature": Temperature.NEUTRAL,
+    },
 ]
 
 
@@ -64,11 +97,15 @@ def _mutate_subject(rng: random.Random, current: SubjectDNA) -> SubjectDNA:
 
 
 def _mutate_composition(rng: random.Random, current: CompositionDNA) -> CompositionDNA:
-    return current.model_copy(update={
-        "layout_type": rng.choice(list(LayoutType)),
-        "balance": rng.choice(list(Balance)),
-        "negative_space_ratio": round(min(1.0, max(0.0, current.negative_space_ratio + rng.uniform(-0.25, 0.25))), 2),
-    })
+    return current.model_copy(
+        update={
+            "layout_type": rng.choice(list(LayoutType)),
+            "balance": rng.choice(list(Balance)),
+            "negative_space_ratio": round(
+                min(1.0, max(0.0, current.negative_space_ratio + rng.uniform(-0.25, 0.25))), 2
+            ),
+        }
+    )
 
 
 def _mutate_palette(rng: random.Random, current: PaletteDNA, boundaries: dict | None = None) -> PaletteDNA:
@@ -81,17 +118,19 @@ def _mutate_palette(rng: random.Random, current: PaletteDNA, boundaries: dict | 
 
 
 def _mutate_texture(rng: random.Random, current: TextureDNA) -> TextureDNA:
-    return current.model_copy(update={
-        "surface_texture": rng.choice(list(SurfaceTexture)),
-        "texture_intensity": round(min(1.0, max(0.0, current.texture_intensity + rng.uniform(-0.3, 0.3))), 2),
-    })
+    return current.model_copy(
+        update={
+            "surface_texture": rng.choice(list(SurfaceTexture)),
+            "texture_intensity": round(min(1.0, max(0.0, current.texture_intensity + rng.uniform(-0.3, 0.3))), 2),
+        }
+    )
 
 
 def _mutate_detail(rng: random.Random, current: DetailDNA) -> DetailDNA:
     return current.model_copy(update={"detail_density": rng.choice(list(DetailDensity))})
 
 
-_BLOCK_MUTATORS = {
+_BLOCK_MUTATORS: dict[str, Callable[[random.Random, Any], Any]] = {
     "subject_dna": _mutate_subject,
     "composition_dna": _mutate_composition,
     "texture_dna": _mutate_texture,
@@ -130,21 +169,24 @@ def mutate(
         else:
             mutation_map[block_name] = {"action": "kept", "reason": "no_mutator_defined"}
 
-    offspring = parent.model_copy(update={
-        "id": uuid.uuid4(),
-        "design_lineage_id": uuid.uuid4(),
-        "version": 1,
-        "parent_genome_id": parent.id,
-        "derived_from_version_id": None,
-        "generation_number": parent.generation_number + 1,
-        "created_by": GenomeCreatedBy.SYSTEM_MUTATION,
-        "mutation_map": mutation_map,
-        **updates,
-    })
+    offspring = parent.model_copy(
+        update={
+            "id": uuid.uuid4(),
+            "design_lineage_id": uuid.uuid4(),
+            "version": 1,
+            "parent_genome_id": parent.id,
+            "derived_from_version_id": None,
+            "generation_number": parent.generation_number + 1,
+            "created_by": GenomeCreatedBy.SYSTEM_MUTATION,
+            "mutation_map": mutation_map,
+            **updates,
+        }
+    )
     return offspring
 
 
 # ---- Approval-action -> genome edit mapping -------------------------------
+
 
 def apply_approval_action(genome: DesignGenome, action: str, rng: random.Random | None = None) -> DesignGenome:
     """Structured genome transform for a human approval action. Always
@@ -184,12 +226,14 @@ def apply_approval_action(genome: DesignGenome, action: str, rng: random.Random 
     else:
         raise ValueError(f"'{action}' is not a genome-mutating approval action")
 
-    return genome.model_copy(update={
-        "id": uuid.uuid4(),
-        "version": genome.version + 1,
-        "parent_genome_id": None,
-        "derived_from_version_id": genome.id,
-        "created_by": GenomeCreatedBy.HUMAN_EDIT,
-        "mutation_map": {"approval_action": action},
-        **updates,
-    })
+    return genome.model_copy(
+        update={
+            "id": uuid.uuid4(),
+            "version": genome.version + 1,
+            "parent_genome_id": None,
+            "derived_from_version_id": genome.id,
+            "created_by": GenomeCreatedBy.HUMAN_EDIT,
+            "mutation_map": {"approval_action": action},
+            **updates,
+        }
+    )

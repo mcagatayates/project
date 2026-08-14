@@ -5,6 +5,7 @@ else may originate prompt text. Every enum here is the single canonical
 vocabulary shared by the compiler, the mutation engine, and the similarity
 engine.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -228,3 +229,7 @@ class DesignGenome(BaseModel):
 
     def dna_blocks(self) -> dict[str, BaseModel]:
         return {name: getattr(self, name) for name in DNA_BLOCK_NAMES}
+
+    def primary_and_background_hex(self) -> tuple[str, str]:
+        primary = self.palette_dna.primary_colors[0] if self.palette_dna.primary_colors else "#808080"
+        return primary, self.palette_dna.background_color

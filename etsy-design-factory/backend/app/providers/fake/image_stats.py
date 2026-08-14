@@ -1,5 +1,6 @@
 """Cheap, real pixel statistics used by fake providers to derive
 deterministic, image-content-driven scores and hashes — no network calls."""
+
 from __future__ import annotations
 
 import hashlib

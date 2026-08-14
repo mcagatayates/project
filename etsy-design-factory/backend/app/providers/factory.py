@@ -4,6 +4,7 @@ This is the one place allowed to know about every concrete adapter class,
 including vendor adapters once they exist (see docs/PROVIDER_ARCHITECTURE.md,
 "Provider-independence rule").
 """
+
 from __future__ import annotations
 
 from pathlib import Path

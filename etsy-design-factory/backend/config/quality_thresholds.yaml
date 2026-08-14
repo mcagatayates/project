@@ -1,0 +1,30 @@
+# Configurable thresholds/weights for QC, repair, tournament and
+# similarity. Nothing in app/pipeline hardcodes these — see
+# docs/AGENT_CONTRACTS.md. Tune from historical evidence over time.
+score_pass_floor: 0.5
+hard_floor_dimensions: [technical_quality, printability]
+hard_floor_value: 0.35
+weighted_pass_threshold: 0.55
+
+tournament_weights:
+  aesthetic: 0.20
+  originality: 0.20
+  commercial_potential: 0.20
+  technical_quality: 0.15
+  printability: 0.10
+  collection_fit: 0.10
+  diversity: 0.05
+
+repair:
+  max_attempts_per_concept: 2
+  promising_min_avg: 0.6
+  quality_boost_per_attempt: 0.4
+
+similarity:
+  phash_hamming_threshold: 8
+  genome_similarity_threshold: 0.82
+  palette_similarity_threshold: 0.90
+
+candidate_counts:
+  discovery_initial: 7
+  production_initial: 3

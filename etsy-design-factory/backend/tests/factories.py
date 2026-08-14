@@ -1,4 +1,5 @@
 """Test-only builders for a valid, minimal DesignGenome and friends."""
+
 from __future__ import annotations
 
 from app.genome.schema import (
@@ -19,10 +20,10 @@ from app.genome.schema import (
     PriceTier,
     PrintDNA,
     RenderingStyle,
+    StyleDNA,
     SubjectCategory,
     SubjectDNA,
     SurfaceTexture,
-    StyleDNA,
     Temperature,
     TextureDNA,
 )

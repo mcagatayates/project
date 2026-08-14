@@ -5,6 +5,7 @@ directly — only app/providers/<vendor>.py files may. Everything else asks
 the ProviderRegistry for a *role* (see registry.py) and gets back one of
 these Protocols.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

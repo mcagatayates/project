@@ -6,6 +6,7 @@ docs/PROVIDER_ARCHITECTURE.md) sharing the same `acquire()` interface so it
 can be swapped in without touching call sites — that Redis-backed variant
 is not implemented in this repository yet (see docs/ROADMAP.md).
 """
+
 from __future__ import annotations
 
 import asyncio
