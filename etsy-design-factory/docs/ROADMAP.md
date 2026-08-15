@@ -106,6 +106,38 @@ running backend, downloaded through the Next.js `/getvela` page in an
 actual browser, and confirmed byte-for-byte matching the real Getvela
 template's header row and the real variation grid's values.
 
+### Google Drive master-image archive
+The other half of the "no direct Etsy API" workflow: once a design has a
+real SKU (every listing gets one -- see `SKU` in `build_listing_rows`
+above), the account owner's actual operational pain point was that when
+an Etsy order comes in, they can't find the corresponding master image
+in Google Drive to fulfill it. `app/pipeline/drive_archive.py` +
+`POST /api/drive-archive/sync` uploads each approved Artwork's master
+image to a Drive folder, named `{sku}.png`, via a real Google Drive API
+call (`app/providers/google_drive.py`, a service-account adapter -- see
+its docstring for the one-time, no-interactive-login setup). This
+follows the same `ProviderRegistry`/fake-adapter pattern as every other
+vendor integration in this codebase (`FakeDriveArchiveProvider` in
+`app/providers/fake/drive_archive.py` — deterministic, no network call —
+is what `PROVIDER_MODE=fake`/tests use; the `archive.drive` role in
+`config/providers.yaml` stays on `fake` until
+`GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` and `GOOGLE_DRIVE_FOLDER_ID` are set).
+
+`drive_archive_records` (`app/memory/drive_archive_memory.py`) tracks
+what's already been archived, so re-running the sync never re-uploads a
+design, and backs `GET /api/drive-archive/lookup?sku=...` -- the actual
+fix for the stated problem: paste an order's SKU into the Control
+Center's `/drive-archive` page (or call the endpoint directly) and land
+on the master file immediately, instead of searching Drive by hand.
+Scope is deliberately narrow: only the master image, not ratio exports
+or mockups, since that's what a POD partner/human needs to fulfill an
+order.
+
+Verified end-to-end with the fake adapter (no real Google credentials
+needed for this): synced real approved artworks from a live backend,
+confirmed a SKU search on `/drive-archive` correctly reported "not
+found" before syncing and returned the correct Drive link after.
+
 ## Phase 5 — Market intelligence & commercial learning
 Market intelligence / commercial-feedback adapters that return `null`
 rather than fabricate data when unconfigured, Champion/Challenger family

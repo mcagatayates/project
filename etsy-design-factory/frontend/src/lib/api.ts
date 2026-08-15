@@ -123,6 +123,24 @@ export interface ResearchPlanResponse {
   queries: ResearchQueryOut[];
 }
 
+export interface DriveArchiveSyncResponse {
+  archived_count: number;
+  failed_count: number;
+  skus: string[];
+}
+
+export interface DriveArchiveRecordOut {
+  artwork_id: string;
+  sku: string;
+  drive_file_id: string;
+  drive_file_url: string;
+  created_at: string;
+}
+
+export interface DriveArchiveHistoryResponse {
+  items: DriveArchiveRecordOut[];
+}
+
 class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -235,6 +253,27 @@ export function exportToGetvela(body: {
 
 export function getGetvelaExportHistory(): Promise<GetvelaExportHistoryResponse> {
   return request<GetvelaExportHistoryResponse>(`/api/getvela/exports`);
+}
+
+export function getDriveArchivePendingCount(): Promise<{ pending_count: number }> {
+  return request<{ pending_count: number }>(`/api/drive-archive/pending-count`);
+}
+
+export function syncToDriveArchive(limit = 50): Promise<DriveArchiveSyncResponse> {
+  return request<DriveArchiveSyncResponse>(`/api/drive-archive/sync?limit=${limit}`, { method: "POST" });
+}
+
+export async function lookupDriveArchiveBySku(sku: string): Promise<DriveArchiveRecordOut | null> {
+  try {
+    return await request<DriveArchiveRecordOut>(`/api/drive-archive/lookup?sku=${encodeURIComponent(sku)}`);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+export function getDriveArchiveHistory(): Promise<DriveArchiveHistoryResponse> {
+  return request<DriveArchiveHistoryResponse>(`/api/drive-archive/records`);
 }
 
 export { ApiError };

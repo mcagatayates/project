@@ -14,10 +14,12 @@ import yaml
 
 from app.config import get_settings
 from app.providers.base import ProviderError
+from app.providers.fake.drive_archive import FakeDriveArchiveProvider
 from app.providers.fake.image_gen import FakeImageGenProvider
 from app.providers.fake.llm import FakeLLMProvider
 from app.providers.fake.upscale import FakeUpscaleProvider
 from app.providers.fake.vision import FakeVisionProvider
+from app.providers.google_drive import GoogleDriveArchiveProvider
 from app.providers.local_storage import LocalStorageProvider
 from app.providers.registry import AdapterSpec, HealthEventHook, ProviderRegistry
 
@@ -27,6 +29,7 @@ _ADAPTER_BUILDERS: dict[str, Any] = {
     "fake_vision": FakeVisionProvider,
     "fake_upscale": FakeUpscaleProvider,
     "local": LocalStorageProvider,
+    "google_drive": GoogleDriveArchiveProvider,
 }
 
 
@@ -42,6 +45,8 @@ def _build_adapter(kind: str, role: str):
             return FakeUpscaleProvider()
         if "storage" in role:
             return LocalStorageProvider()
+        if "drive" in role or "archive" in role:
+            return FakeDriveArchiveProvider()
         return FakeImageGenProvider()
 
     if kind == "local":

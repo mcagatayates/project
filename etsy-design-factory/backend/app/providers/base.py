@@ -101,6 +101,24 @@ class StorageProvider(Protocol):
     def url_for(self, *, key: str) -> str: ...
 
 
+@dataclass
+class DriveArchiveResult:
+    file_id: str
+    file_url: str
+
+
+class DriveArchiveProvider(Protocol):
+    """Uploads a named file to a durable, human-browsable archive (real
+    adapter: Google Drive). See app/pipeline/drive_archive.py -- exists
+    specifically so a human fulfilling an order can find a design's master
+    image by SKU, separate from StorageProvider's keyed system-of-record
+    storage."""
+
+    name: str
+
+    async def upload(self, *, filename: str, data: bytes, content_type: str = "image/png") -> DriveArchiveResult: ...
+
+
 class ProviderError(Exception):
     """Raised by adapters on a failed call; caught by the registry for
     retry/circuit-breaker/fallback handling."""

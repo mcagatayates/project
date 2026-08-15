@@ -30,3 +30,10 @@ roles:
     rate_per_minute: 30
   storage.default:
     adapter: local
+  archive.drive:
+    # Real path: app/providers/google_drive.py, a service-account-based
+    # Google Drive upload (see that module's docstring for setup). Switch
+    # `adapter` to `google_drive` once GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON
+    # and GOOGLE_DRIVE_FOLDER_ID are set -- PROVIDER_MODE=fake/APP_ENV=test
+    # always substitutes the fake adapter regardless of this value.
+    adapter: fake

@@ -3,7 +3,7 @@
 The Human Control Center for the autonomous Etsy wall-art design factory:
 a Next.js (App Router) frontend for the FastAPI backend in `../backend`.
 
-Four screens, matching what the backend actually exposes -- nothing here
+Five screens, matching what the backend actually exposes -- nothing here
 calls an endpoint that doesn't exist, and nothing shown is fabricated
 client-side:
 
@@ -25,6 +25,11 @@ client-side:
   downloads the file for you to upload through Getvela's own Import
   button. See `../docs/ROADMAP.md` "Getvela CSV export" for why this
   exists instead of a direct Etsy API integration.
+- **Drive Archive** (`/drive-archive`) -- a SKU search box that jumps
+  straight to a design's master image on Google Drive (the actual fix
+  for "I can't find the master image when an order comes in"), plus a
+  sync button and history (`POST /api/drive-archive/sync`,
+  `GET /api/drive-archive/lookup`, `GET /api/drive-archive/records`).
 
 ## Running locally
 

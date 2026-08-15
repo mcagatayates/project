@@ -8,6 +8,7 @@ from app.db.models.collection import Collection
 from app.db.models.commercial import CommercialObservation, CreativeFamily
 from app.db.models.concept import Concept
 from app.db.models.cost import CostEvent, ProviderHealthLog
+from app.db.models.drive_archive import DriveArchiveRecord
 from app.db.models.evaluation import Evaluation
 from app.db.models.experiment import Experiment
 from app.db.models.failure import FailureRecord, RepairAttempt
@@ -41,4 +42,5 @@ __all__ = [
     "MarketSignal",
     "GetvelaExportBatch",
     "GetvelaExportRecord",
+    "DriveArchiveRecord",
 ]

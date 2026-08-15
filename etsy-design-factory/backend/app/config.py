@@ -74,6 +74,13 @@ class Settings(BaseSettings):
     # an unreachable localhost URL as if it were real.
     public_base_url: str | None = None
 
+    # Google Drive master-image archive (see app/providers/google_drive.py
+    # for the one-time service-account setup this needs). Unset by
+    # default; app/pipeline/drive_archive.py's real path stays inactive
+    # (fake adapter only) until both are configured.
+    google_drive_service_account_json: str | None = None
+    google_drive_folder_id: str | None = None
+
     @property
     def is_test(self) -> bool:
         return self.app_env == "test"

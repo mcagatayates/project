@@ -162,3 +162,25 @@ class GetvelaExportHistoryResponse(BaseModel):
 
 class GetvelaPendingCountResponse(BaseModel):
     pending_count: int
+
+
+class DriveArchiveSyncResponse(BaseModel):
+    archived_count: int
+    failed_count: int
+    skus: list[str]
+
+
+class DriveArchiveRecordOut(BaseModel):
+    artwork_id: uuid.UUID
+    sku: str
+    drive_file_id: str
+    drive_file_url: str
+    created_at: datetime
+
+
+class DriveArchiveHistoryResponse(BaseModel):
+    items: list[DriveArchiveRecordOut]
+
+
+class DriveArchivePendingCountResponse(BaseModel):
+    pending_count: int

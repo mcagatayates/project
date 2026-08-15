@@ -14,3 +14,5 @@ pyyaml==6.0.2
 python-dotenv==1.0.1
 boto3==1.35.90
 httpx==0.28.1
+google-api-python-client==2.198.0
+google-auth==2.56.3

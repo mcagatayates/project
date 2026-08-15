@@ -162,10 +162,10 @@ Index: `(source)`.
 `id, requested_by, row_count, listing_count, created_at`. One row per CSV
 export run (`POST /api/getvela/export`, see
 `app/pipeline/getvela_export.py`) — `row_count` is the number of CSV data
-rows written (one per print ratio per listing, since each listing gets a
-continuation row per Size variation), `listing_count` the number of
-distinct artworks/listings. Append-only, like every other event-log table
-here.
+rows written (each listing contributes one row per Size x Material
+variation offer in `config/getvela_variation_template.csv`, currently
+252 per listing), `listing_count` the number of distinct artworks/
+listings. Append-only, like every other event-log table here.
 
 ### getvela_export_records
 `id, batch_id (FK), artwork_id (FK, unique), created_at`. One row per
@@ -175,6 +175,18 @@ recorded here is excluded from the next batch's candidate list (see
 `app/memory/getvela_export_memory.py:not_yet_exported_artworks()`), so the
 CSV export never hands the same design to Getvela twice.
 Indexes: `(artwork_id)` unique, `(batch_id)`.
+
+### drive_archive_records
+`id, artwork_id (FK, unique), sku, drive_file_id, drive_file_url,
+created_at`. One row per Artwork whose master image has actually been
+uploaded to the Google Drive archive folder
+(`POST /api/drive-archive/sync`, see `app/pipeline/drive_archive.py`).
+Exists so a human fulfilling an Etsy order can search by SKU (either
+`GET /api/drive-archive/lookup?sku=...` or Drive's own search) and land
+directly on the master file. The `artwork_id` uniqueness constraint
+makes re-running the sync safe, the same pattern as
+`getvela_export_records`. Append-only.
+Indexes: `(artwork_id)` unique, `(sku)`.
 
 ## Migration strategy
 
