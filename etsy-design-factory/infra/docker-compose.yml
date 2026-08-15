@@ -79,10 +79,19 @@ services:
       redis:
         condition: service_healthy
 
-  # No `frontend` service: the Next.js Control Center described in
-  # docs/ARCHITECTURE.md is not implemented yet (see docs/ROADMAP.md
-  # "Explicit non-goals"). Add one here, pointed at NEXT_PUBLIC_API_BASE_URL
-  # http://backend:8000, once it exists.
+  frontend:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.frontend
+      args:
+        # Browser-facing URL for the backend -- NOT http://backend:8000,
+        # which only resolves inside the compose network. Override via
+        # .env if the stack isn't reached at localhost.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
 
 volumes:
   postgres_data:

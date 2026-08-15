@@ -144,15 +144,25 @@ diagnosed) without corrupting sibling candidates or the collection.
 
 These are named, not silently skipped, so nothing is mistaken for "done":
 
-- **No Next.js frontend.** `docs/ARCHITECTURE.md` specifies Next.js/React/
-  Tailwind for the Control Center; this repository ships the complete,
-  tested FastAPI backend it would consume (`app/main.py`, `app/api/` —
-  dashboard KPIs, candidate grid with images, single/bulk approval
-  actions, production plan trigger) but not the UI itself. This is the
-  single largest deferred piece of the mission brief — building and
-  testing a real approval UI (image grid, keyboard-driven bulk actions,
-  live KPI polling) is its own multi-day effort, and a stable, tested API
-  contract was judged more valuable to ship first than a partial UI.
+- **Next.js frontend is an MVP, not the full mission-brief UI.**
+  `frontend/` is a working Next.js (App Router) + TypeScript + Tailwind
+  Control Center consuming the FastAPI backend end-to-end: a dashboard
+  (`GET /api/dashboard/today`, production plan trigger via
+  `POST /api/production/plan`), an approval queue (`GET /api/candidates`,
+  single and multi-select bulk approve/reject via
+  `POST /api/candidates/{id}/approval` and
+  `/bulk-approval`), and a read-only market-signals view
+  (`GET /api/market-intelligence/signals`,
+  `GET /api/market-intelligence/research-queries`). Verified with a real
+  end-to-end browser smoke test against a live backend seeded by the
+  daily simulation: real generated images rendered, a production plan
+  triggered, a bulk approval submitted and persisted (`approved` count
+  moved 3 → 10 in the dashboard KPI). What's still missing versus the
+  mission brief's fuller vision: keyboard-driven bulk actions, live
+  KPI polling/websockets (currently load-on-navigate), and per-candidate
+  refinement actions beyond approve/reject (`MORE_ORIGINAL`,
+  `CHANGE_PALETTE`, etc. — the API supports these via `ApprovalAction`,
+  the UI doesn't expose them yet). See `frontend/README.md`.
 - No real Etsy publish integration (adapter interface + package data model
   exist; the network call is intentionally not implemented without live
   credentials).
@@ -242,15 +252,17 @@ create_trigger(
 )
 ```
 
-The `NextJS` frontend or a dashboard widget can then show
-`GET /api/market-intelligence/signals` to make this research visible to
-the human, and it already feeds `rank_opportunities()` for free.
+The `frontend/market-signals` page already shows
+`GET /api/market-intelligence/signals` and today's research plan, making
+this research visible to the human, and it already feeds
+`rank_opportunities()` (and now `archetype_affinity.py`, see Phase 5
+above) for free.
 
 ## Environment & running it
 
 See `backend/README.md` for local setup (Postgres via Docker or SQLite for
 tests, Redis via Docker or Celery eager mode for tests) and
-`infra/docker-compose.yml` for the full stack (Postgres, Redis, backend,
-worker, beat, frontend — the `frontend` service in `docker-compose.yml`
-and its Dockerfile are placeholders for the deferred Next.js app above,
-not yet buildable).
+`frontend/README.md` for the Control Center. `infra/docker-compose.yml`
+builds the full stack (Postgres, Redis, backend, worker, beat, frontend)
+via `infra/Dockerfile.backend`, `infra/Dockerfile.worker`, and
+`infra/Dockerfile.frontend`.
