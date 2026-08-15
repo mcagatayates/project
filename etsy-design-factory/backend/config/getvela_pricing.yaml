@@ -1,0 +1,21 @@
+# Getvela CSV export pricing. Like config/production_policy.yaml's
+# portfolio_allocation_fractions, this is an initial hypothesis you edit
+# freely -- nothing in app/pipeline/getvela_export.py hardcodes a price.
+#
+# Each listing's "Price" column is the lowest of its Size variations'
+# "Var Price" (Etsy's own "from $X" convention). Var Price for a given
+# ratio = collection_base_price_usd[<collection name>] (or the default
+# below, if the collection isn't listed) * size_price_multiplier[<ratio>].
+
+default_base_price_usd: 18.00
+
+collection_base_price_usd: {}
+# Example overrides once you know which collections sell at what price:
+# collection_base_price_usd:
+#   "Botanical Calm": 18.00
+#   "Desert Horizon": 22.00
+
+size_price_multiplier:
+  "4:5": 1.0 # smallest size (8x10in) -- base price
+  "3:4": 1.15 # 12x16in
+  "2:3": 1.35 # 12x18in -- largest size

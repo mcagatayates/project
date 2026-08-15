@@ -132,3 +132,33 @@ class ResearchQueryOut(BaseModel):
 class ResearchPlanResponse(BaseModel):
     plan_date: str
     queries: list[ResearchQueryOut]
+
+
+class GetvelaExportRequest(BaseModel):
+    requested_by: str = Field(min_length=1, max_length=200)
+    collection_id: uuid.UUID | None = None
+    limit: int = Field(default=50, ge=1, le=200)
+
+
+class GetvelaExportResponse(BaseModel):
+    batch_id: uuid.UUID
+    listing_count: int
+    row_count: int
+    skus: list[str]
+    csv: str
+
+
+class GetvelaExportBatchOut(BaseModel):
+    id: uuid.UUID
+    requested_by: str
+    listing_count: int
+    row_count: int
+    created_at: datetime
+
+
+class GetvelaExportHistoryResponse(BaseModel):
+    items: list[GetvelaExportBatchOut]
+
+
+class GetvelaPendingCountResponse(BaseModel):
+    pending_count: int

@@ -52,8 +52,53 @@ Real ratio exports (actual pixel operations, never DPI-metadata tricks),
 mockup compositing kept strictly separate from the master asset, Etsy
 listing package assembly with zero coupling from the creative pipeline to
 any Etsy API call.
-**Status: complete.** `app/pipeline/{print_factory,mockup_factory,
-etsy_package}.py`.
+**Status: complete**, plus a real Getvela CSV export path (below).
+`app/pipeline/{print_factory,mockup_factory,etsy_package,getvela_export}.py`.
+
+### Getvela CSV export (not the Etsy API)
+The mission's Etsy publish path was intentionally never built against
+Etsy's own API — the account owner does not want direct API access, over
+concern that automated listing activity risks a shop suspension. Instead
+the existing real workflow is: bulk-import a CSV into
+[Getvela](https://getvela.com) (an Etsy shop-management tool), where
+listings land in Getvela's archive and get activated by hand, day by day.
+`POST /api/getvela/export` (`app/pipeline/getvela_export.py`) produces
+that CSV directly from real approved `Artwork` + `EtsyListingPackage`
+rows — the exact column header row was taken from the account owner's
+real Getvela "Import new listings" template
+(`CSV_HEADERS` in that module — do not reorder/rename without
+re-confirming against a fresh Getvela export). One Etsy listing per
+Artwork, physical print-on-demand, with a single "Size" variation across
+whichever print ratios `print_factory.py` actually exported for it (never
+a size nothing was cropped for) — see
+`config/getvela_shop_defaults.yaml`'s `size_labels` for the exact
+ratio-to-inches mapping. Pricing is per-collection, from
+`config/getvela_pricing.yaml` (an initial hypothesis, like
+`production_policy.yaml`'s allocation fractions — edit freely). Shop/
+account-level fields that depend on the seller's actual Etsy
+configuration (category, shipping profile, return policy, any registered
+production partner) come from `config/getvela_shop_defaults.yaml`'s
+"EDIT ME" placeholders, never guessed.
+
+Photo columns are real, absolute URLs (`app/api/routes/artwork_assets.py`
+serves print-export and mockup images the same way
+`app/api/routes/candidates.py` already serves candidate images) built
+from `PUBLIC_BASE_URL` — the export raises a clear error rather than emit
+an unreachable `localhost` URL if that setting is unset, following the
+same pattern as every other real-integration point in this codebase
+(`SERPAPI_KEY`, `MARKET_SIGNAL_INGESTION_TOKEN`). `getvela_export_batches`
+/ `getvela_export_records` (`app/memory/getvela_export_memory.py`) track
+which artworks have already been handed to Getvela, so re-running the
+export never re-includes a design already in Getvela's archive — the
+Control Center's `/getvela` page shows how many approved designs are
+still waiting, triggers an export, and downloads the CSV.
+
+This was verified end-to-end during development: a real daily-simulation
+run producing approved artworks with real print exports, mockups, and an
+`EtsyListingPackage`, exported through this exact endpoint from a real
+running backend, downloaded through the Next.js `/getvela` page in an
+actual browser, and confirmed byte-for-byte matching the real Getvela
+template's header row.
 
 ## Phase 5 — Market intelligence & commercial learning
 Market intelligence / commercial-feedback adapters that return `null`
@@ -163,9 +208,15 @@ These are named, not silently skipped, so nothing is mistaken for "done":
   refinement actions beyond approve/reject (`MORE_ORIGINAL`,
   `CHANGE_PALETTE`, etc. — the API supports these via `ApprovalAction`,
   the UI doesn't expose them yet). See `frontend/README.md`.
-- No real Etsy publish integration (adapter interface + package data model
-  exist; the network call is intentionally not implemented without live
-  credentials).
+- **No direct Etsy API integration, by deliberate choice, not omission.**
+  The account owner does not want Etsy API credentials in this system at
+  all, over concern that automated listing activity risks a shop
+  suspension. The adapter interface + package data model
+  (`app/db/models/artwork.py:EtsyListingPackage`) still exist for anyone
+  who later decides otherwise, but the real publish path this system
+  actually ships is the Getvela CSV export (Phase 4 above) — CSV in,
+  human review and activation in Getvela, exactly matching the account
+  owner's existing workflow and risk tolerance.
 - No real paid image-gen/vision-LLM vendor wired by default — provider
   config supports it (`PROVIDER_ARCHITECTURE.md`), but shipping with a
   vendor key baked in is out of scope and against the "never hardcode

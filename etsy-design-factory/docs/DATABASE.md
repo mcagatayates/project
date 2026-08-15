@@ -158,6 +158,24 @@ market research"). `source` records exact provenance (e.g.
 signal is traceable to what actually produced it.
 Index: `(source)`.
 
+### getvela_export_batches
+`id, requested_by, row_count, listing_count, created_at`. One row per CSV
+export run (`POST /api/getvela/export`, see
+`app/pipeline/getvela_export.py`) — `row_count` is the number of CSV data
+rows written (one per print ratio per listing, since each listing gets a
+continuation row per Size variation), `listing_count` the number of
+distinct artworks/listings. Append-only, like every other event-log table
+here.
+
+### getvela_export_records
+`id, batch_id (FK), artwork_id (FK, unique), created_at`. One row per
+Artwork actually included in a batch. The `artwork_id` uniqueness
+constraint is what makes re-running the export safe: an artwork already
+recorded here is excluded from the next batch's candidate list (see
+`app/memory/getvela_export_memory.py:not_yet_exported_artworks()`), so the
+CSV export never hands the same design to Getvela twice.
+Indexes: `(artwork_id)` unique, `(batch_id)`.
+
 ## Migration strategy
 
 Alembic, one linear history under `backend/migrations/versions/`. Every

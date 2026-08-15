@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import approvals, candidates, dashboard, market_intelligence, production
+from app.api.routes import approvals, artwork_assets, candidates, dashboard, getvela, market_intelligence, production
 from app.config import get_settings
 
 app = FastAPI(title="Etsy Design Factory API", version="0.1.0")
@@ -61,3 +61,5 @@ app.include_router(candidates.router)
 app.include_router(approvals.router)
 app.include_router(production.router)
 app.include_router(market_intelligence.router)
+app.include_router(artwork_assets.router)
+app.include_router(getvela.router)

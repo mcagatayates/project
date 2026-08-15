@@ -98,6 +98,26 @@ export interface ResearchQueryOut {
   reason: string;
 }
 
+export interface GetvelaExportResponse {
+  batch_id: string;
+  listing_count: number;
+  row_count: number;
+  skus: string[];
+  csv: string;
+}
+
+export interface GetvelaExportBatchOut {
+  id: string;
+  requested_by: string;
+  listing_count: number;
+  row_count: number;
+  created_at: string;
+}
+
+export interface GetvelaExportHistoryResponse {
+  items: GetvelaExportBatchOut[];
+}
+
 export interface ResearchPlanResponse {
   plan_date: string;
   queries: ResearchQueryOut[];
@@ -196,6 +216,25 @@ export function listMarketSignals(withinDays = 7): Promise<MarketSignalListRespo
 
 export function getResearchQueries(): Promise<ResearchPlanResponse> {
   return request<ResearchPlanResponse>(`/api/market-intelligence/research-queries`);
+}
+
+export function getGetvelaPendingCount(): Promise<{ pending_count: number }> {
+  return request<{ pending_count: number }>(`/api/getvela/pending-count`);
+}
+
+export function exportToGetvela(body: {
+  requested_by: string;
+  collection_id?: string;
+  limit?: number;
+}): Promise<GetvelaExportResponse> {
+  return request<GetvelaExportResponse>(`/api/getvela/export`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function getGetvelaExportHistory(): Promise<GetvelaExportHistoryResponse> {
+  return request<GetvelaExportHistoryResponse>(`/api/getvela/exports`);
 }
 
 export { ApiError };

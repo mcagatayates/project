@@ -66,6 +66,14 @@ class Settings(BaseSettings):
     # acceptable for local/dev use.
     market_signal_ingestion_token: str | None = None
 
+    # The backend's real, externally-reachable base URL (e.g.
+    # https://factory.example.com) -- needed only by
+    # app/pipeline/getvela_export.py, which puts absolute Photo column
+    # URLs into a CSV that Getvela's own servers fetch over the internet.
+    # Left unset in dev; the export raises a clear error rather than emit
+    # an unreachable localhost URL as if it were real.
+    public_base_url: str | None = None
+
     @property
     def is_test(self) -> bool:
         return self.app_env == "test"

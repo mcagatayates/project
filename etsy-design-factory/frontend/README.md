@@ -3,7 +3,7 @@
 The Human Control Center for the autonomous Etsy wall-art design factory:
 a Next.js (App Router) frontend for the FastAPI backend in `../backend`.
 
-Three screens, matching what the backend actually exposes -- nothing here
+Four screens, matching what the backend actually exposes -- nothing here
 calls an endpoint that doesn't exist, and nothing shown is fabricated
 client-side:
 
@@ -18,6 +18,13 @@ client-side:
   signals and today's research plan
   (`GET /api/market-intelligence/signals`,
   `GET /api/market-intelligence/research-queries`), read-only.
+- **Getvela Export** (`/getvela`) -- how many approved designs are
+  waiting, and a button that exports them as a CSV matching the real
+  Getvela "Import new listings" template
+  (`POST /api/getvela/export`, `GET /api/getvela/exports` for history) --
+  downloads the file for you to upload through Getvela's own Import
+  button. See `../docs/ROADMAP.md` "Getvela CSV export" for why this
+  exists instead of a direct Etsy API integration.
 
 ## Running locally
 
