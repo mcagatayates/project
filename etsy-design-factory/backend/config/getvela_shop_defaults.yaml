@@ -1,47 +1,35 @@
 # Shop/account-level constants for the Getvela CSV export
-# (app/pipeline/getvela_export.py). These do NOT come from the creative
-# pipeline -- they depend on your actual Etsy shop's existing setup
-# (category taxonomy, shipping profiles, return policy, any registered
-# production partner). The defaults below are common choices for a
-# self-designed, print-on-demand-fulfilled physical print, but they are
-# PLACEHOLDERS, not verified against your real shop. Edit the ones
-# marked "EDIT ME" before your first real import.
+# (app/pipeline/getvela_export.py). Values below were taken directly from
+# a real export of the account owner's actual Getvela listing (a
+# Printify-fulfilled physical print) -- not guessed. If you change your
+# real Etsy category, shipping profile, return policy, or POD partner,
+# update this file to match; the export never hardcodes these.
 
-category: "Home & Living > Wall Décor > Prints" # EDIT ME: must match a real category path in your shop
-who_made_it: "I did" # accurate for a POD item you designed, per Etsy's own rules -- disclose the partner below
+category: "Art & Collectibles > Prints > Digital Prints"
+who_made_it: "I did"
 what_is_it: "A finished product"
-when_was_it_made: "Made to order"
+when_was_it_made: "Made To Order"
 renewal_options: "Automatic"
-production_partners: "" # EDIT ME: must match a production partner already registered in your Etsy shop, if any
-shipping_profile: "" # EDIT ME: must match an existing shipping profile name in your shop
-return_policy: "" # EDIT ME: must match an existing return policy name in your shop
+production_partners: "Printify"
+shipping_profile: "Free Shipping"
+return_policy: "30 days to return or exchange"
 product_type: "Physical"
 
-# Package shipping dimensions -- left blank (empty CSV cell) unless you
-# fill these in below; never fabricated with a made-up number.
+# Package shipping dimensions -- left blank (empty CSV cell), matching
+# the real reference listing, which also leaves these blank (Printify
+# fulfillment doesn't need them set here).
 weight_oz: null
 length_in: null
 width_in: null
 height_in: null
 
-# How much stock to declare per Size variation. Etsy requires a number
-# even for made-to-order items; sellers commonly use a very high one.
-quantity_per_variation: 999
+# Listing-level stock count Etsy requires even for made-to-order items --
+# taken directly from the real reference listing.
+quantity_per_listing: 95
 
-# What a physical print is actually made of -- edit to match your real
-# print/paper supplier.
-materials:
-  - "Archival paper"
-  - "Giclée ink"
-
-# Etsy "Size" variation option label per print ratio -- one option per
-# ratio app/pipeline/print_factory.py actually exports (RATIO_ASPECTS),
-# each an exact real-world size for that aspect ratio, not an arbitrary
-# label:
-#   2:3 -> 12x18in, 3:4 -> 12x16in, 4:5 -> 8x10in
-size_labels:
-  "2:3": "12 x 18 in"
-  "3:4": "12 x 16 in"
-  "4:5": "8 x 10 in"
-
-variation_name: "Size"
+# Names of the two Etsy variation dimensions used -- see
+# config/getvela_variation_template.csv for the actual Size x Material
+# grid and per-combination pricing, taken verbatim from a real Getvela
+# export so nothing here is a guessed price.
+variation_1_name: "Size"
+variation_2_name: "Material"

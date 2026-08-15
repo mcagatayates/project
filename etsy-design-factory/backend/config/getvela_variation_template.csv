@@ -1,0 +1,253 @@
+size,material,price_usd,visible
+A1 | 59.4x84.07 cm,Print Only,66.50,true
+A1 | 59.4x84.07 cm,Fine Art Paper,169.00,true
+A1 | 59.4x84.07 cm,Canvas Ready to Hang,24.30,false
+A1 | 59.4x84.07 cm,White Framed Canvas,24.30,false
+A1 | 59.4x84.07 cm,Black Framed Canvas,24.30,false
+A1 | 59.4x84.07 cm,Brown Framed Canvas,24.30,false
+A1 | 59.4x84.07 cm,Fine Art White Frame,24.30,false
+A1 | 59.4x84.07 cm,Fine Art Black Frame,24.30,false
+A1 | 59.4x84.07 cm,Fine Art Brown Frame,24.30,false
+A2 | 42x59.4 cm,Print Only,32.80,true
+A2 | 42x59.4 cm,Fine Art Paper,136.20,true
+A2 | 42x59.4 cm,Canvas Ready to Hang,24.30,false
+A2 | 42x59.4 cm,White Framed Canvas,24.30,false
+A2 | 42x59.4 cm,Black Framed Canvas,24.30,false
+A2 | 42x59.4 cm,Brown Framed Canvas,24.30,false
+A2 | 42x59.4 cm,Fine Art White Frame,24.30,false
+A2 | 42x59.4 cm,Fine Art Black Frame,24.30,false
+A2 | 42x59.4 cm,Fine Art Brown Frame,24.30,false
+A3 | 29.7x42 cm,Print Only,4.70,true
+A3 | 29.7x42 cm,Fine Art Paper,76.84,true
+A3 | 29.7x42 cm,Canvas Ready to Hang,24.30,false
+A3 | 29.7x42 cm,White Framed Canvas,24.30,false
+A3 | 29.7x42 cm,Black Framed Canvas,24.30,false
+A3 | 29.7x42 cm,Brown Framed Canvas,24.30,false
+A3 | 29.7x42 cm,Fine Art White Frame,24.30,false
+A3 | 29.7x42 cm,Fine Art Black Frame,24.30,false
+A3 | 29.7x42 cm,Fine Art Brown Frame,24.30,false
+A4 | 21x29.7 cm,Print Only,37.85,true
+A4 | 21x29.7 cm,Fine Art Paper,47.00,true
+A4 | 21x29.7 cm,Canvas Ready to Hang,24.30,false
+A4 | 21x29.7 cm,White Framed Canvas,24.30,false
+A4 | 21x29.7 cm,Black Framed Canvas,24.30,false
+A4 | 21x29.7 cm,Brown Framed Canvas,24.30,false
+A4 | 21x29.7 cm,Fine Art White Frame,24.30,false
+A4 | 21x29.7 cm,Fine Art Black Frame,24.30,false
+A4 | 21x29.7 cm,Fine Art Brown Frame,24.30,false
+A5 | 14.8x21 cm,Print Only,36.60,true
+A5 | 14.8x21 cm,Fine Art Paper,27.30,true
+A5 | 14.8x21 cm,Canvas Ready to Hang,24.30,false
+A5 | 14.8x21 cm,White Framed Canvas,24.30,false
+A5 | 14.8x21 cm,Black Framed Canvas,24.30,false
+A5 | 14.8x21 cm,Brown Framed Canvas,24.30,false
+A5 | 14.8x21 cm,Fine Art White Frame,24.30,false
+A5 | 14.8x21 cm,Fine Art Black Frame,24.30,false
+A5 | 14.8x21 cm,Fine Art Brown Frame,24.30,false
+"4""x6"" | 10x15 cm",Print Only,24.30,true
+"4""x6"" | 10x15 cm",Fine Art Paper,21.42,true
+"4""x6"" | 10x15 cm",Canvas Ready to Hang,107.90,false
+"4""x6"" | 10x15 cm",White Framed Canvas,24.30,false
+"4""x6"" | 10x15 cm",Black Framed Canvas,24.30,false
+"4""x6"" | 10x15 cm",Brown Framed Canvas,24.30,false
+"4""x6"" | 10x15 cm",Fine Art White Frame,24.30,false
+"4""x6"" | 10x15 cm",Fine Art Black Frame,24.30,false
+"4""x6"" | 10x15 cm",Fine Art Brown Frame,24.30,false
+"5""x7"" | 13x18 cm",Print Only,30.80,true
+"5""x7"" | 13x18 cm",Fine Art Paper,27.30,true
+"5""x7"" | 13x18 cm",Canvas Ready to Hang,43.40,false
+"5""x7"" | 13x18 cm",White Framed Canvas,24.30,false
+"5""x7"" | 13x18 cm",Black Framed Canvas,24.30,false
+"5""x7"" | 13x18 cm",Brown Framed Canvas,24.30,false
+"5""x7"" | 13x18 cm",Fine Art White Frame,24.30,false
+"5""x7"" | 13x18 cm",Fine Art Black Frame,24.30,false
+"5""x7"" | 13x18 cm",Fine Art Brown Frame,24.30,false
+"6""x9"" | 15x23 cm",Print Only,31.50,true
+"6""x9"" | 15x23 cm",Fine Art Paper,34.50,true
+"6""x9"" | 15x23 cm",Canvas Ready to Hang,186.00,false
+"6""x9"" | 15x23 cm",White Framed Canvas,24.30,false
+"6""x9"" | 15x23 cm",Black Framed Canvas,24.30,false
+"6""x9"" | 15x23 cm",Brown Framed Canvas,24.30,false
+"6""x9"" | 15x23 cm",Fine Art White Frame,24.30,false
+"6""x9"" | 15x23 cm",Fine Art Black Frame,24.30,false
+"6""x9"" | 15x23 cm",Fine Art Brown Frame,24.30,false
+"8""x10"" | 20x25 cm",Print Only,36.60,true
+"8""x10"" | 20x25 cm",Fine Art Paper,47.00,true
+"8""x10"" | 20x25 cm",Canvas Ready to Hang,26.00,true
+"8""x10"" | 20x25 cm",White Framed Canvas,86.00,false
+"8""x10"" | 20x25 cm",Black Framed Canvas,86.00,false
+"8""x10"" | 20x25 cm",Brown Framed Canvas,86.00,false
+"8""x10"" | 20x25 cm",Fine Art White Frame,24.30,false
+"8""x10"" | 20x25 cm",Fine Art Black Frame,24.30,false
+"8""x10"" | 20x25 cm",Fine Art Brown Frame,24.30,false
+"8""x12"" | 20x30 cm",Print Only,37.85,true
+"8""x12"" | 20x30 cm",Fine Art Paper,49.00,true
+"8""x12"" | 20x30 cm",Canvas Ready to Hang,377.80,true
+"8""x12"" | 20x30 cm",White Framed Canvas,24.30,false
+"8""x12"" | 20x30 cm",Black Framed Canvas,24.30,false
+"8""x12"" | 20x30 cm",Brown Framed Canvas,24.30,false
+"8""x12"" | 20x30 cm",Fine Art White Frame,24.30,false
+"8""x12"" | 20x30 cm",Fine Art Black Frame,24.30,false
+"8""x12"" | 20x30 cm",Fine Art Brown Frame,24.30,false
+"9""x11"" | 22x29 cm",Print Only,38.10,true
+"9""x11"" | 22x29 cm",Fine Art Paper,51.44,true
+"9""x11"" | 22x29 cm",Canvas Ready to Hang,51.00,false
+"9""x11"" | 22x29 cm",White Framed Canvas,24.30,false
+"9""x11"" | 22x29 cm",Black Framed Canvas,24.30,false
+"9""x11"" | 22x29 cm",Brown Framed Canvas,24.30,false
+"9""x11"" | 22x29 cm",Fine Art White Frame,24.30,false
+"9""x11"" | 22x29 cm",Fine Art Black Frame,24.30,false
+"9""x11"" | 22x29 cm",Fine Art Brown Frame,24.30,false
+"9""x12"" | 22x30 cm",Print Only,5.60,true
+"9""x12"" | 22x30 cm",Fine Art Paper,66.50,false
+"9""x12"" | 22x30 cm",Canvas Ready to Hang,31.00,true
+"9""x12"" | 22x30 cm",White Framed Canvas,76.00,true
+"9""x12"" | 22x30 cm",Black Framed Canvas,76.00,true
+"9""x12"" | 22x30 cm",Brown Framed Canvas,76.00,true
+"9""x12"" | 22x30 cm",Fine Art White Frame,268.00,true
+"9""x12"" | 22x30 cm",Fine Art Black Frame,268.00,true
+"9""x12"" | 22x30 cm",Fine Art Brown Frame,268.00,true
+"10""x15"" | 25x38 cm",Print Only,40.50,true
+"10""x15"" | 25x38 cm",Fine Art Paper,53.52,true
+"10""x15"" | 25x38 cm",Canvas Ready to Hang,1726.00,false
+"10""x15"" | 25x38 cm",White Framed Canvas,24.30,false
+"10""x15"" | 25x38 cm",Black Framed Canvas,24.30,false
+"10""x15"" | 25x38 cm",Brown Framed Canvas,24.30,false
+"10""x15"" | 25x38 cm",Fine Art White Frame,24.30,false
+"10""x15"" | 25x38 cm",Fine Art Black Frame,24.30,false
+"10""x15"" | 25x38 cm",Fine Art Brown Frame,24.30,false
+"11""x14"" | 28x35 cm",Print Only,42.90,true
+"11""x14"" | 28x35 cm",Fine Art Paper,58.30,true
+"11""x14"" | 28x35 cm",Canvas Ready to Hang,35.50,true
+"11""x14"" | 28x35 cm",White Framed Canvas,156.00,true
+"11""x14"" | 28x35 cm",Black Framed Canvas,156.00,true
+"11""x14"" | 28x35 cm",Brown Framed Canvas,156.00,true
+"11""x14"" | 28x35 cm",Fine Art White Frame,451.00,true
+"11""x14"" | 28x35 cm",Fine Art Black Frame,451.00,true
+"11""x14"" | 28x35 cm",Fine Art Brown Frame,451.00,true
+"11""x16"" | 27x40 cm",Print Only,43.40,true
+"11""x16"" | 27x40 cm",Fine Art Paper,62.90,true
+"11""x16"" | 27x40 cm",Canvas Ready to Hang,24.30,false
+"11""x16"" | 27x40 cm",White Framed Canvas,24.30,false
+"11""x16"" | 27x40 cm",Black Framed Canvas,24.30,false
+"11""x16"" | 27x40 cm",Brown Framed Canvas,24.30,false
+"11""x16"" | 27x40 cm",Fine Art White Frame,24.30,false
+"11""x16"" | 27x40 cm",Fine Art Black Frame,24.30,false
+"11""x16"" | 27x40 cm",Fine Art Brown Frame,24.30,false
+"11""x17"" | 27x43 cm",Print Only,44.50,true
+"11""x17"" | 27x43 cm",Fine Art Paper,66.24,true
+"11""x17"" | 27x43 cm",Canvas Ready to Hang,24.30,false
+"11""x17"" | 27x43 cm",White Framed Canvas,24.30,false
+"11""x17"" | 27x43 cm",Black Framed Canvas,24.30,false
+"11""x17"" | 27x43 cm",Brown Framed Canvas,24.30,false
+"11""x17"" | 27x43 cm",Fine Art White Frame,24.30,false
+"11""x17"" | 27x43 cm",Fine Art Black Frame,24.30,false
+"11""x17"" | 27x43 cm",Fine Art Brown Frame,24.30,false
+12”x16” | 30x40cm,Print Only,2.40,true
+12”x16” | 30x40cm,Fine Art Paper,71.44,true
+12”x16” | 30x40cm,Canvas Ready to Hang,41.00,true
+12”x16” | 30x40cm,White Framed Canvas,186.00,true
+12”x16” | 30x40cm,Black Framed Canvas,186.00,true
+12”x16” | 30x40cm,Brown Framed Canvas,186.00,true
+12”x16” | 30x40cm,Fine Art White Frame,554.00,true
+12”x16” | 30x40cm,Fine Art Black Frame,554.00,true
+12”x16” | 30x40cm,Fine Art Brown Frame,554.00,true
+12”x18” | 30x45cm,Print Only,4.70,true
+12”x18” | 30x45cm,Fine Art Paper,76.84,true
+12”x18” | 30x45cm,Canvas Ready to Hang,46.00,true
+12”x18” | 30x45cm,White Framed Canvas,141.00,true
+12”x18” | 30x45cm,Black Framed Canvas,141.00,true
+12”x18” | 30x45cm,Brown Framed Canvas,141.00,true
+12”x18” | 30x45cm,Fine Art White Frame,24.30,false
+12”x18” | 30x45cm,Fine Art Black Frame,24.30,false
+12”x18” | 30x45cm,Fine Art Brown Frame,24.30,false
+"14""x21"" | 35x53 cm",Print Only,32.80,true
+"14""x21"" | 35x53 cm",Fine Art Paper,110.78,true
+"14""x21"" | 35x53 cm",Canvas Ready to Hang,24.30,false
+"14""x21"" | 35x53 cm",White Framed Canvas,24.30,false
+"14""x21"" | 35x53 cm",Black Framed Canvas,24.30,false
+"14""x21"" | 35x53 cm",Brown Framed Canvas,24.30,false
+"14""x21"" | 35x53 cm",Fine Art White Frame,24.30,false
+"14""x21"" | 35x53 cm",Fine Art Black Frame,24.30,false
+"14""x21"" | 35x53 cm",Fine Art Brown Frame,24.30,false
+16”x20” | 40x50cm,Print Only,32.80,true
+16”x20” | 40x50cm,Fine Art Paper,126.64,true
+16”x20” | 40x50cm,Canvas Ready to Hang,101.00,true
+16”x20” | 40x50cm,White Framed Canvas,276.00,true
+16”x20” | 40x50cm,Black Framed Canvas,276.00,true
+16”x20” | 40x50cm,Brown Framed Canvas,276.00,true
+16”x20” | 40x50cm,Fine Art White Frame,710.00,true
+16”x20” | 40x50cm,Fine Art Black Frame,710.00,true
+16”x20” | 40x50cm,Fine Art Brown Frame,710.00,true
+16”x24” | 40x60cm,Print Only,32.80,true
+16”x24” | 40x60cm,Fine Art Paper,136.20,true
+16”x24” | 40x60cm,Canvas Ready to Hang,106.00,true
+16”x24” | 40x60cm,White Framed Canvas,377.80,true
+16”x24” | 40x60cm,Black Framed Canvas,377.80,true
+16”x24” | 40x60cm,Brown Framed Canvas,377.80,true
+16”x24” | 40x60cm,Fine Art White Frame,24.30,false
+16”x24” | 40x60cm,Fine Art Black Frame,24.30,false
+16”x24” | 40x60cm,Fine Art Brown Frame,24.30,false
+18”x24” | 45x60cm,Print Only,32.80,true
+18”x24” | 45x60cm,Fine Art Paper,140.70,true
+18”x24” | 45x60cm,Canvas Ready to Hang,146.00,true
+18”x24” | 45x60cm,White Framed Canvas,311.00,true
+18”x24” | 45x60cm,Black Framed Canvas,311.00,true
+18”x24” | 45x60cm,Brown Framed Canvas,311.00,true
+18”x24” | 45x60cm,Fine Art White Frame,879.00,true
+18”x24” | 45x60cm,Fine Art Black Frame,879.00,true
+18”x24” | 45x60cm,Fine Art Brown Frame,879.00,true
+"19""x27"" | 50x70 cm",Print Only,41.00,true
+"19""x27"" | 50x70 cm",Fine Art Paper,143.44,true
+"19""x27"" | 50x70 cm",Canvas Ready to Hang,24.30,false
+"19""x27"" | 50x70 cm",White Framed Canvas,24.30,false
+"19""x27"" | 50x70 cm",Black Framed Canvas,24.30,false
+"19""x27"" | 50x70 cm",Brown Framed Canvas,24.30,false
+"19""x27"" | 50x70 cm",Fine Art White Frame,24.30,false
+"19""x27"" | 50x70 cm",Fine Art Black Frame,24.30,false
+"19""x27"" | 50x70 cm",Fine Art Brown Frame,24.30,false
+20”x30” | 50x75cm,Print Only,51.00,true
+20”x30” | 50x75cm,Fine Art Paper,150.00,true
+20”x30” | 50x75cm,Canvas Ready to Hang,206.00,true
+20”x30” | 50x75cm,White Framed Canvas,408.50,true
+20”x30” | 50x75cm,Black Framed Canvas,408.50,true
+20”x30” | 50x75cm,Brown Framed Canvas,408.50,true
+20”x30” | 50x75cm,Fine Art White Frame,1085.00,true
+20”x30” | 50x75cm,Fine Art Black Frame,1085.00,true
+20”x30” | 50x75cm,Fine Art Brown Frame,1085.00,true
+24”x32” | 60x80cm,Print Only,64.50,true
+24”x32” | 60x80cm,Fine Art Paper,160.82,true
+24”x32” | 60x80cm,Canvas Ready to Hang,246.00,true
+24”x32” | 60x80cm,White Framed Canvas,526.50,true
+24”x32” | 60x80cm,Black Framed Canvas,526.50,true
+24”x32” | 60x80cm,Brown Framed Canvas,526.50,true
+24”x32” | 60x80cm,Fine Art White Frame,1431.00,true
+24”x32” | 60x80cm,Fine Art Black Frame,1431.00,true
+24”x32” | 60x80cm,Fine Art Brown Frame,1431.00,true
+24”x36” | 60x90cm,Print Only,66.50,true
+24”x36” | 60x90cm,Fine Art Paper,168.90,true
+24”x36” | 60x90cm,Canvas Ready to Hang,266.00,true
+24”x36” | 60x90cm,White Framed Canvas,636.50,true
+24”x36” | 60x90cm,Black Framed Canvas,636.50,true
+24”x36” | 60x90cm,Brown Framed Canvas,636.50,true
+24”x36” | 60x90cm,Fine Art White Frame,1714.00,true
+24”x36” | 60x90cm,Fine Art Black Frame,1714.00,true
+24”x36” | 60x90cm,Fine Art Brown Frame,1714.00,true
+"30”x40” | 75x101,6cm",Print Only,171.70,true
+"30”x40” | 75x101,6cm",Fine Art Paper,24.30,false
+"30”x40” | 75x101,6cm",Canvas Ready to Hang,426.00,true
+"30”x40” | 75x101,6cm",White Framed Canvas,551.20,true
+"30”x40” | 75x101,6cm",Black Framed Canvas,1537.90,true
+"30”x40” | 75x101,6cm",Brown Framed Canvas,1537.90,true
+"30”x40” | 75x101,6cm",Fine Art White Frame,3201.00,true
+"30”x40” | 75x101,6cm",Fine Art Black Frame,3201.00,true
+"30”x40” | 75x101,6cm",Fine Art Brown Frame,3201.00,true
+"32”x48” | 80x121,9cm",Print Only,167.30,false
+"32”x48” | 80x121,9cm",Fine Art Paper,24.30,false
+"32”x48” | 80x121,9cm",Canvas Ready to Hang,643.00,true
+"32”x48” | 80x121,9cm",White Framed Canvas,825.10,true
+"32”x48” | 80x121,9cm",Black Framed Canvas,1726.00,true
+"32”x48” | 80x121,9cm",Brown Framed Canvas,1726.00,true
+"32”x48” | 80x121,9cm",Fine Art White Frame,3476.00,true
+"32”x48” | 80x121,9cm",Fine Art Black Frame,3476.00,true
+"32”x48” | 80x121,9cm",Fine Art Brown Frame,3476.00,true

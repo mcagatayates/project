@@ -10,10 +10,11 @@ from app.pipeline.etsy_package import build_etsy_package
 from app.pipeline.generation import generate_candidate
 from app.pipeline.getvela_export import (
     CSV_HEADERS,
+    VariationOffer,
     build_export_for_artworks,
     build_listing_rows,
-    get_pricing_policy,
     get_shop_defaults,
+    get_variation_template,
     render_csv,
 )
 from app.pipeline.mockup_factory import generate_all_mockups
@@ -59,7 +60,15 @@ async def _make_listing(db_session, registry, collection, genome, ratios=("2:3",
     return artwork, package, print_exports, mockups
 
 
-def test_build_listing_rows_one_row_per_ratio_with_continuation_rows_blank(db_session, registry, collection):
+def _custom_offers() -> tuple[VariationOffer, ...]:
+    return (
+        VariationOffer(size="A4 | 21x29.7 cm", material="Print Only", price_usd=25.0, visible=True),
+        VariationOffer(size="A4 | 21x29.7 cm", material="Framed Canvas", price_usd=90.0, visible=True),
+        VariationOffer(size="A3 | 29.7x42 cm", material="Print Only", price_usd=35.0, visible=False),
+    )
+
+
+def test_build_listing_rows_one_row_per_real_variation_offer(db_session, registry, collection):
     genome = make_genome(collection_id=collection.id)
     artwork, package, print_exports, mockups = asyncio.run(_make_listing(db_session, registry, collection, genome))
 
@@ -70,32 +79,45 @@ def test_build_listing_rows_one_row_per_ratio_with_continuation_rows_blank(db_se
         print_exports=print_exports,
         mockups=mockups,
         public_base_url="https://factory.example.com",
+        variation_offers=_custom_offers(),
     )
 
     assert len(rows) == 3
     assert rows[0]["Title"] == package.title_concepts[0][:140]
     assert rows[0]["SKU"] == artwork.sku
     assert rows[0]["Product type"] == "Physical"
+    assert rows[0]["Variation 1"] == "Size"
+    assert rows[0]["V1 Option"] == "A4 | 21x29.7 cm"
+    assert rows[0]["Variation 2"] == "Material"
+    assert rows[0]["V2 Option"] == "Print Only"
+    assert rows[0]["Var Price"] == "25.00"
+    assert rows[0]["Var Visibility"] == "On"
     assert rows[0]["Photo 1"].startswith("https://factory.example.com/api/mockups/")
+
     # continuation rows carry no listing-level fields, only the variation block
     for row in rows[1:]:
         assert row["Title"] == ""
         assert row["Description"] == ""
         assert row["SKU"] == ""
         assert row["Photo 1"] == ""
-        assert row["Var SKU"] != ""
+        assert row["V1 Option"] != ""
+        assert row["V2 Option"] != ""
         assert row["Var Price"] != ""
 
+    assert rows[2]["V1 Option"] == "A3 | 29.7x42 cm"
+    assert rows[2]["Var Price"] == "35.00"
+    assert rows[2]["Var Visibility"] == "Off"
 
-def test_build_listing_rows_prices_scale_by_size_multiplier(db_session, registry, collection):
+
+def test_listing_price_is_lowest_among_visible_offers_only(db_session, registry, collection):
     genome = make_genome(collection_id=collection.id)
     artwork, package, print_exports, mockups = asyncio.run(_make_listing(db_session, registry, collection, genome))
 
-    pricing = {
-        "default_base_price_usd": 20.0,
-        "collection_base_price_usd": {},
-        "size_price_multiplier": {"4:5": 1.0, "3:4": 1.2, "2:3": 1.5},
-    }
+    offers = (
+        VariationOffer(size="A5 | 14.8x21 cm", material="Print Only", price_usd=1.00, visible=False),
+        VariationOffer(size="A4 | 21x29.7 cm", material="Print Only", price_usd=25.00, visible=True),
+        VariationOffer(size="A3 | 29.7x42 cm", material="Print Only", price_usd=15.00, visible=True),
+    )
     rows = build_listing_rows(
         artwork=artwork,
         package=package,
@@ -103,56 +125,11 @@ def test_build_listing_rows_prices_scale_by_size_multiplier(db_session, registry
         print_exports=print_exports,
         mockups=mockups,
         public_base_url="https://factory.example.com",
-        pricing=pricing,
+        variation_offers=offers,
     )
-    by_ratio = {}
-    for pe, row in zip(print_exports, rows, strict=False):
-        by_ratio[pe.ratio] = float(row["Var Price"])
-
-    assert by_ratio["4:5"] == pytest.approx(20.0)
-    assert by_ratio["3:4"] == pytest.approx(24.0)
-    assert by_ratio["2:3"] == pytest.approx(30.0)
-    # listing-level Price is the lowest variation price
-    assert float(rows[0]["Price"]) == pytest.approx(20.0)
-
-
-def test_build_listing_rows_uses_collection_override_price(db_session, registry, collection):
-    genome = make_genome(collection_id=collection.id)
-    artwork, package, print_exports, mockups = asyncio.run(
-        _make_listing(db_session, registry, collection, genome, ratios=("4:5",))
-    )
-
-    pricing = {
-        "default_base_price_usd": 18.0,
-        "collection_base_price_usd": {collection.name: 30.0},
-        "size_price_multiplier": {"4:5": 1.0},
-    }
-    rows = build_listing_rows(
-        artwork=artwork,
-        package=package,
-        collection=collection,
-        print_exports=print_exports,
-        mockups=mockups,
-        public_base_url="https://factory.example.com",
-        pricing=pricing,
-    )
-    assert float(rows[0]["Var Price"]) == pytest.approx(30.0)
-
-
-def test_build_listing_rows_raises_on_artwork_without_known_ratio_exports(db_session, registry, collection):
-    genome = make_genome(collection_id=collection.id)
-    artwork, package, _print_exports, mockups = asyncio.run(
-        _make_listing(db_session, registry, collection, genome, ratios=("2:3",))
-    )
-    with pytest.raises(ValueError, match="no print exports"):
-        build_listing_rows(
-            artwork=artwork,
-            package=package,
-            collection=collection,
-            print_exports=[],  # simulate a design with no eligible print exports
-            mockups=mockups,
-            public_base_url="https://factory.example.com",
-        )
+    # the cheapest offer (1.00) is hidden (Off) -- the displayed "from"
+    # price must reflect what a buyer can actually purchase, not it.
+    assert rows[0]["Price"] == "15.00"
 
 
 def test_render_csv_matches_real_getvela_template_headers():
@@ -193,18 +170,30 @@ def test_build_export_for_artworks_produces_one_listing_per_artwork(db_session, 
 
     csv_text, skus, row_count = build_export_for_artworks(db_session, artworks=[artwork1, artwork2])
     assert set(skus) == {artwork1.sku, artwork2.sku}
-    assert row_count == 6  # 3 ratios per artwork x 2 artworks
+    assert row_count == 2 * len(get_variation_template())
     assert csv_text.count(artwork1.sku) >= 1
     assert csv_text.count(artwork2.sku) >= 1
 
     get_settings.cache_clear()
 
 
-def test_shop_defaults_and_pricing_load_from_real_config_files():
+def test_shop_defaults_load_from_real_config_file():
     shop = get_shop_defaults()
     assert shop["product_type"] == "Physical"
-    assert set(shop["size_labels"]) == {"2:3", "3:4", "4:5"}
+    assert shop["production_partners"] == "Printify"
+    assert shop["variation_1_name"] == "Size"
+    assert shop["variation_2_name"] == "Material"
 
-    pricing = get_pricing_policy()
-    assert pricing["default_base_price_usd"] > 0
-    assert set(pricing["size_price_multiplier"]) == {"2:3", "3:4", "4:5"}
+
+def test_variation_template_loads_the_real_reference_grid():
+    offers = get_variation_template()
+    # 28 real sizes x 9 real materials, taken from an actual Getvela
+    # export -- see config/getvela_variation_template.csv.
+    assert len(offers) == 252
+    sizes = {o.size for o in offers}
+    materials = {o.material for o in offers}
+    assert len(sizes) == 28
+    assert len(materials) == 9
+    assert "Print Only" in materials
+    assert "Canvas Ready to Hang" in materials
+    assert any(o.size.startswith("A1") and o.material == "Print Only" for o in offers)

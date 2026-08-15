@@ -83,11 +83,13 @@ def test_export_returns_csv_and_records_batch_so_rerun_excludes_it(db_session, r
     assert resp.status_code == 200
     assert resp.json()["pending_count"] == 1
 
+    from app.pipeline.getvela_export import get_variation_template
+
     resp = client.post("/api/getvela/export", json={"requested_by": "tester"})
     assert resp.status_code == 200
     body = resp.json()
     assert body["listing_count"] == 1
-    assert body["row_count"] == 3
+    assert body["row_count"] == len(get_variation_template())
     assert artwork.sku in body["skus"]
     assert artwork.sku in body["csv"]
     assert body["csv"].splitlines()[0].startswith("Title,Description,Category")

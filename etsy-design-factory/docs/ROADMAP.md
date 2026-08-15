@@ -65,20 +65,26 @@ listings land in Getvela's archive and get activated by hand, day by day.
 `POST /api/getvela/export` (`app/pipeline/getvela_export.py`) produces
 that CSV directly from real approved `Artwork` + `EtsyListingPackage`
 rows — the exact column header row was taken from the account owner's
-real Getvela "Import new listings" template
-(`CSV_HEADERS` in that module — do not reorder/rename without
-re-confirming against a fresh Getvela export). One Etsy listing per
-Artwork, physical print-on-demand, with a single "Size" variation across
-whichever print ratios `print_factory.py` actually exported for it (never
-a size nothing was cropped for) — see
-`config/getvela_shop_defaults.yaml`'s `size_labels` for the exact
-ratio-to-inches mapping. Pricing is per-collection, from
-`config/getvela_pricing.yaml` (an initial hypothesis, like
-`production_policy.yaml`'s allocation fractions — edit freely). Shop/
-account-level fields that depend on the seller's actual Etsy
-configuration (category, shipping profile, return policy, any registered
-production partner) come from `config/getvela_shop_defaults.yaml`'s
-"EDIT ME" placeholders, never guessed.
+real Getvela "Import new listings" template (`CSV_HEADERS` in that
+module — do not reorder/rename without re-confirming against a fresh
+Getvela export).
+
+One Etsy listing per Artwork, physical print-on-demand fulfilled via
+Printify, with **two** Etsy variations — Size and Material — not one.
+The full 28-size × 9-material × price grid
+(`config/getvela_variation_template.csv`, 252 rows) was copied verbatim
+from a real export of the account owner's actual Getvela listing, and is
+reused unchanged for every new listing (only Title/Description/Category/
+Tags/Section/SKU/Photos/Price differ per design). This is deliberate,
+not a shortcut: real per-(size,material) pricing is driven by Printify's
+actual fulfillment costs, which this system has no way to compute or
+infer, so guessing a formula would have meant fabricating prices. The
+listing-level "Price" column is the lowest price among only the
+*visible* (`Var Visibility=On`) offers, matching what a buyer can
+actually purchase. Shop/account-level fields that depend on the seller's
+actual Etsy configuration (category, shipping profile, return policy,
+production partner) similarly came from that same real export, in
+`config/getvela_shop_defaults.yaml` — not guessed, not placeholders.
 
 Photo columns are real, absolute URLs (`app/api/routes/artwork_assets.py`
 serves print-export and mockup images the same way
@@ -98,7 +104,7 @@ run producing approved artworks with real print exports, mockups, and an
 `EtsyListingPackage`, exported through this exact endpoint from a real
 running backend, downloaded through the Next.js `/getvela` page in an
 actual browser, and confirmed byte-for-byte matching the real Getvela
-template's header row.
+template's header row and the real variation grid's values.
 
 ## Phase 5 — Market intelligence & commercial learning
 Market intelligence / commercial-feedback adapters that return `null`

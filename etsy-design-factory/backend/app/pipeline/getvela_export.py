@@ -3,14 +3,16 @@ into a CSV matching the user's real Getvela "Import new listings"
 template (Vela's own bulk-import format mirrors Etsy's own listing CSV
 columns exactly -- see the column list below).
 
-Physical print-on-demand, one Etsy listing per Artwork with a single
-"Size" variation covering the print ratios app/pipeline/print_factory.py
-actually exported for it (never invents a size nothing was cropped for).
-Shop/account-level fields (category, shipping profile, return policy,
-production partner) come from config/getvela_shop_defaults.yaml because
-they depend on the seller's real Etsy shop configuration, not on
-anything the creative pipeline knows -- see that file's "EDIT ME" notes.
-Pricing comes from config/getvela_pricing.yaml, keyed by collection name.
+Physical print-on-demand (fulfilled via Printify), one Etsy listing per
+Artwork with two Etsy variations -- Size and Material -- covering the
+exact 28-size x 9-material x price grid in
+config/getvela_variation_template.csv. That file is not a guess: it was
+copied verbatim from a real export of the account owner's actual Getvela
+listing, because per-size/per-material pricing depends on real Printify
+fulfillment costs this system has no way to compute or infer. Shop/
+account-level fields (category, shipping profile, return policy,
+production partner) come from config/getvela_shop_defaults.yaml for the
+same reason -- see that file's header comment.
 
 This never calls the Etsy API and never touches Getvela itself -- it only
 produces a CSV file for the human to upload through Getvela's own
@@ -24,6 +26,7 @@ from __future__ import annotations
 
 import csv
 import io
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
@@ -33,10 +36,11 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db.models.artwork import Artwork, EtsyListingPackage, Mockup, PrintExport
 from app.db.models.collection import Collection
-from app.pipeline.print_factory import RATIO_ASPECTS
 
 DEFAULT_SHOP_DEFAULTS_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "getvela_shop_defaults.yaml"
-DEFAULT_PRICING_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "getvela_pricing.yaml"
+DEFAULT_VARIATION_TEMPLATE_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "config" / "getvela_variation_template.csv"
+)
 
 # Exact header row from the user's real Getvela "Import new listings"
 # template -- do not reorder or rename without confirming against a fresh
@@ -93,27 +97,44 @@ CSV_HEADERS = [
 _MAX_PHOTOS = 10
 
 
+@dataclass(frozen=True)
+class VariationOffer:
+    size: str
+    material: str
+    price_usd: float
+    visible: bool
+
+
 @lru_cache
 def _load_yaml(path: str) -> dict:
     return yaml.safe_load(Path(path).read_text()) or {}
+
+
+@lru_cache
+def _load_variation_template(path: str) -> tuple[VariationOffer, ...]:
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        return tuple(
+            VariationOffer(
+                size=row["size"],
+                material=row["material"],
+                price_usd=float(row["price_usd"]),
+                visible=row["visible"].strip().lower() == "true",
+            )
+            for row in reader
+        )
 
 
 def get_shop_defaults(path: str | None = None) -> dict:
     return _load_yaml(path or str(DEFAULT_SHOP_DEFAULTS_PATH))
 
 
-def get_pricing_policy(path: str | None = None) -> dict:
-    return _load_yaml(path or str(DEFAULT_PRICING_PATH))
-
-
-def _base_price(collection: Collection, pricing: dict) -> float:
-    overrides = pricing.get("collection_base_price_usd") or {}
-    return float(overrides.get(collection.name, pricing["default_base_price_usd"]))
-
-
-def _variation_price(base_price: float, ratio: str, pricing: dict) -> float:
-    multiplier = (pricing.get("size_price_multiplier") or {}).get(ratio, 1.0)
-    return round(base_price * multiplier, 2)
+def get_variation_template(path: str | None = None) -> tuple[VariationOffer, ...]:
+    """The real Size x Material x Price grid -- see this module's
+    docstring and config/getvela_variation_template.csv. Reused verbatim
+    for every listing rather than computed, since real per-combination
+    Printify pricing isn't something this system can derive."""
+    return _load_variation_template(path or str(DEFAULT_VARIATION_TEMPLATE_PATH))
 
 
 def _final_title(package: EtsyListingPackage) -> str:
@@ -140,9 +161,9 @@ def _final_description(package: EtsyListingPackage) -> str:
     return "\n".join(line for line in lines if line)
 
 
-def _photo_paths(artwork: Artwork, mockups: list[Mockup], print_exports: list[PrintExport]) -> list[str]:
+def _photo_paths(mockups: list[Mockup], print_exports: list[PrintExport]) -> list[str]:
     # Buyers see styled mockups first, then a flat shot of each printed
-    # ratio actually exported -- never a size nothing was cropped for.
+    # ratio actually exported.
     paths = [f"/api/mockups/{m.id}/image" for m in mockups]
     paths += [f"/api/print-exports/{pe.id}/image" for pe in print_exports]
     return paths[:_MAX_PHOTOS]
@@ -161,44 +182,42 @@ def build_listing_rows(
     mockups: list[Mockup],
     public_base_url: str,
     shop_defaults: dict | None = None,
-    pricing: dict | None = None,
+    variation_offers: tuple[VariationOffer, ...] | None = None,
 ) -> list[dict[str, str]]:
-    """One or more CSV rows for a single Etsy listing: the first row
-    carries every listing-level field plus the first Size variation; any
-    additional print ratios become continuation rows (blank Title etc.),
-    matching Etsy/Getvela's own multi-row variation CSV convention."""
+    """One CSV row per (Size, Material) offer for a single Etsy listing:
+    the first row carries every listing-level field plus the first
+    variation; every other offer becomes a continuation row (blank
+    Title/Description/etc.), matching Etsy/Getvela's own multi-row
+    variation CSV convention."""
     shop = shop_defaults if shop_defaults is not None else get_shop_defaults()
-    price_policy = pricing if pricing is not None else get_pricing_policy()
+    offers = variation_offers if variation_offers is not None else get_variation_template()
+    if not offers:
+        raise ValueError("no variation offers configured (config/getvela_variation_template.csv is empty)")
 
-    ratios = [pe.ratio for pe in print_exports if pe.ratio in RATIO_ASPECTS]
-    if not ratios:
-        raise ValueError(f"artwork {artwork.id} has no print exports for a known ratio")
+    v1_name = shop.get("variation_1_name", "Size")
+    v2_name = shop.get("variation_2_name", "Material")
+    quantity = shop.get("quantity_per_listing")
 
-    size_labels = shop.get("size_labels") or {}
-    variation_name = shop.get("variation_name", "Size")
-    base_price = _base_price(collection, price_policy)
-    quantity = shop.get("quantity_per_variation", 999)
-
-    photo_urls = [f"{public_base_url.rstrip('/')}{p}" for p in _photo_paths(artwork, mockups, print_exports)]
+    photo_urls = [f"{public_base_url.rstrip('/')}{p}" for p in _photo_paths(mockups, print_exports)]
 
     title = _final_title(package)
     description = _final_description(package)
     tags = ",".join(package.tags)
-    materials = ", ".join(shop.get("materials") or [])
+
+    visible_prices = [o.price_usd for o in offers if o.visible]
+    lowest_price = min(visible_prices) if visible_prices else min(o.price_usd for o in offers)
 
     rows: list[dict[str, str]] = []
-    for i, ratio in enumerate(ratios):
-        variation_price = _variation_price(base_price, ratio, price_policy)
+    for i, offer in enumerate(offers):
         row = {h: "" for h in CSV_HEADERS}
-        row["Variation 1"] = variation_name
-        row["V1 Option"] = size_labels.get(ratio, ratio)
-        row["Var Price"] = f"{variation_price:.2f}"
-        row["Var Quantity"] = str(quantity)
-        row["Var SKU"] = f"{artwork.sku}-{ratio.replace(':', 'x')}"
-        row["Var Visibility"] = "visible"
+        row["Variation 1"] = v1_name
+        row["V1 Option"] = offer.size
+        row["Variation 2"] = v2_name
+        row["V2 Option"] = offer.material
+        row["Var Price"] = f"{offer.price_usd:.2f}"
+        row["Var Visibility"] = "On" if offer.visible else "Off"
 
         if i == 0:
-            lowest_price = min(_variation_price(base_price, r, price_policy) for r in ratios)
             row.update(
                 {
                     "Title": title,
@@ -210,11 +229,10 @@ def build_listing_rows(
                     "Renewal options": shop.get("renewal_options", ""),
                     "Product type": shop.get("product_type", "Physical"),
                     "Tags": tags,
-                    "Materials": materials,
                     "Production partners": shop.get("production_partners", ""),
                     "Section": collection.name,
                     "Price": f"{lowest_price:.2f}",
-                    "Quantity": str(quantity),
+                    "Quantity": _fmt(quantity),
                     "SKU": artwork.sku,
                     "Shipping profile": shop.get("shipping_profile", ""),
                     "Weight": _fmt(shop.get("weight_oz")),
@@ -243,8 +261,8 @@ def build_export_for_artworks(session: Session, *, artworks: list[Artwork]) -> t
     from the DB and renders the full CSV. Returns (csv_text, skus,
     row_count) -- skus purely for a human-readable confirmation, not used
     for lookups. Raises ValueError naming the artwork if it has no
-    listing package or no known-ratio print exports yet (nothing here
-    fabricates a listing for a design that isn't actually ready)."""
+    listing package yet (nothing here fabricates a listing for a design
+    that isn't actually ready)."""
     settings = get_settings()
     if not settings.public_base_url:
         raise ValueError(
@@ -254,7 +272,7 @@ def build_export_for_artworks(session: Session, *, artworks: list[Artwork]) -> t
         )
 
     shop_defaults = get_shop_defaults()
-    pricing = get_pricing_policy()
+    variation_offers = get_variation_template()
 
     all_rows: list[dict[str, str]] = []
     skus: list[str] = []
@@ -278,7 +296,7 @@ def build_export_for_artworks(session: Session, *, artworks: list[Artwork]) -> t
             mockups=mockups,
             public_base_url=settings.public_base_url,
             shop_defaults=shop_defaults,
-            pricing=pricing,
+            variation_offers=variation_offers,
         )
         all_rows.extend(rows)
         skus.append(artwork.sku)
