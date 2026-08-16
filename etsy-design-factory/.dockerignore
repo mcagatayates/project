@@ -1,0 +1,25 @@
+# Build context for infra/Dockerfile.backend, .worker, .frontend (context: ..)
+# Keeps image builds fast and small -- without this, local venvs/
+# node_modules/caches get uploaded into every build context.
+
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+
+backend/storage
+backend/demo.db
+backend/*.db
+
+frontend/node_modules
+frontend/.next
+frontend/out
+
+**/.env
+**/.env.local
+
+.git
+.gitignore
+docs

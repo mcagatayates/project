@@ -355,3 +355,22 @@ tests, Redis via Docker or Celery eager mode for tests) and
 builds the full stack (Postgres, Redis, backend, worker, beat, frontend)
 via `infra/Dockerfile.backend`, `infra/Dockerfile.worker`, and
 `infra/Dockerfile.frontend`.
+
+The Docker images were validated the closest way this development
+environment allows (no nested Docker daemon available here): a completely
+fresh Python 3.11 venv installed only from `backend/requirements.txt` (no
+extra system packages beyond what `Dockerfile.backend`/`.worker` already
+`apt-get install`), then `alembic upgrade head` and `uvicorn app.main:app`
+run from that exact venv against a clean DB -- both succeeded, proving the
+backend image's dependency set and migration chain are self-contained. The
+frontend was validated by running `next build`'s real `.next/standalone`
+output (what `Dockerfile.frontend`'s run stage actually ships) with `node
+server.js`, laid out exactly as the Dockerfile's `COPY` steps would
+produce it -- all pages served `200`. Fixed along the way: there was no
+`.dockerignore`, so every build was uploading `backend/.venv` (~600MB) and
+`frontend/node_modules` (~350MB) as build context; `etsy-design-factory/
+.dockerignore` now excludes those, plus local DBs/caches. Also added
+`etsy-design-factory/.gitignore` (a real `.env` at that path had no
+gitignore rule protecting it from being committed). Not yet verified: an
+actual `docker compose build && up` run end-to-end -- do that once in an
+environment with a real Docker daemon before a first deployment.
