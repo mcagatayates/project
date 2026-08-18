@@ -7,13 +7,16 @@ import {
   ResearchQueryOut,
   getResearchQueries,
   listMarketSignals,
+  refreshMarketSignals,
 } from "@/lib/api";
 
 export default function MarketSignalsPage() {
   const [signals, setSignals] = useState<MarketSignalOut[]>([]);
   const [queries, setQueries] = useState<ResearchQueryOut[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshResult, setRefreshResult] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -33,14 +36,45 @@ export default function MarketSignalsPage() {
     load();
   }, [load]);
 
+  async function handleRefresh() {
+    setRefreshing(true);
+    setError(null);
+    setRefreshResult(null);
+    try {
+      const result = await refreshMarketSignals();
+      setRefreshResult(
+        result.items.length > 0
+          ? `Found ${result.items.length} new real signal${result.items.length === 1 ? "" : "s"}.`
+          : "Ran successfully, nothing new found this time."
+      );
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Refresh failed.");
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-xl font-semibold text-white">Market Intelligence</h1>
         <p className="mt-1 text-sm text-neutral-400">
-          Real signals only -- nothing here is fabricated. Signals come from a code-level search adapter or an
-          agent-driven web research job (see docs/ROADMAP.md &quot;Agent-driven market research&quot;).
+          Real signals only -- nothing here is fabricated. Runs automatically once a day (organic search +
+          Google Trends rising topics + seasonal onset learning), or trigger it now below. Also accepts
+          agent-driven web research findings (see docs/ROADMAP.md &quot;Agent-driven market research&quot;).
         </p>
+      </div>
+
+      <div className="flex items-center gap-4 rounded-lg border border-border bg-panel p-4">
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="rounded bg-accent px-4 py-2 text-sm font-semibold text-canvas hover:opacity-90 disabled:opacity-50"
+        >
+          {refreshing ? "Refreshing..." : "Refresh now"}
+        </button>
+        {refreshResult ? <span className="text-sm text-neutral-400">{refreshResult}</span> : null}
       </div>
 
       {error ? (
@@ -55,8 +89,8 @@ export default function MarketSignalsPage() {
           <div className="text-sm text-neutral-500">Loading...</div>
         ) : signals.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-6 text-sm text-neutral-500">
-            No market signals recorded yet. Configure SERPAPI_KEY for the code-level adapter, or POST findings via
-            /api/market-intelligence/signals.
+            No market signals recorded yet. Configure SERPAPI_KEY and click &quot;Refresh now&quot; above, or POST
+            findings via /api/market-intelligence/signals.
           </div>
         ) : (
           <div className="divide-y divide-border rounded-lg border border-border bg-panel">

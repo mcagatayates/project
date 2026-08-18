@@ -145,17 +145,52 @@ tracking, learning engine that adjusts Production Controller allocation
 from real outcomes only.
 **Status: complete, including a working real market-intelligence path.**
 `app/pipeline/{market_intelligence,opportunity_engine,performance_ingestion,
-champion_challenger,commercial_learning}.py`,
-`app/providers/{commercial_feedback,web_search_market_intelligence}.py`,
+champion_challenger,commercial_learning,trend_signal}.py`,
+`app/providers/{commercial_feedback,web_search_market_intelligence,
+google_trends}.py`,
 `app/memory/{commercial_memory,market_signal_memory}.py`,
 `app/db/models/market_signal.py`, `app/api/routes/market_intelligence.py`.
 
-Market intelligence has two real (non-Null) paths in, both landing in the
-same `market_signals` table and both read back by
+Market intelligence has three real (non-Null) paths in, all landing in
+the same `market_signals` table and all read back by
 `DatabaseMarketIntelligenceAdapter`:
-1. **Code-level**: `WebSearchMarketIntelligenceAdapter` calls a real search
-   API (SerpAPI) inline from a Celery worker — needs `SERPAPI_KEY`.
-2. **Externally submitted**: `POST /api/market-intelligence/signals` lets
+1. **Code-level, organic search**: `WebSearchMarketIntelligenceAdapter`
+   calls a real search API (SerpAPI) — needs `SERPAPI_KEY`.
+2. **Code-level, Google Trends**: `app/pipeline/trend_signal.py`, via
+   `app/providers/google_trends.py` (SerpAPI's `google_trends` engine,
+   same key). Two signals, both real data, neither a fixed query list:
+   - `fetch_rising_topics()` — what's actually climbing in search
+     interest right now for `config/market_research_queries.yaml`'s
+     `trend_watch_terms` (Google Trends "rising related queries").
+   - `fetch_seasonal_onset_signals()` — for each occasion in
+     `config/seasonal_calendar.yaml`, empirically measures from last
+     year's real weekly interest-over-time data how many weeks before
+     the occasion demand actually started rising, and reports it against
+     the hand-set `lead_weeks` hypothesis (e.g. "last year, real search
+     interest for 'halloween wall art' started rising ~8.0 weeks before
+     Halloween -- later than the configured 12-week lead time"). This
+     never rewrites `seasonal_calendar.yaml` automatically; it surfaces
+     the evidence as a normal market signal so a human can decide whether
+     to retune `lead_weeks`, and it already feeds
+     `opportunity_engine.py`/`archetype_affinity.py` like any other
+     signal with no further wiring.
+   Both are wrapped by `refresh_real_market_signals()`, which also
+   activates the organic-search adapter above -- previously implemented
+   but never actually called by anything. This one function is now
+   called two ways: automatically once a day by a Celery beat schedule
+   (`app/queue/celery_app.py`'s `daily-market-intelligence-refresh`,
+   `app/queue/tasks/trend_refresh.py`), and on demand via
+   `POST /api/market-intelligence/refresh` (a "Refresh now" button on the
+   Control Center's `/market-signals` page). An unconfigured `SERPAPI_KEY`
+   makes the beat task a safe no-op forever rather than crash-looping; the
+   manual endpoint instead raises a clear 400 so a human explicitly
+   asking for a refresh finds out why nothing happened.
+   Field-name note: Google Trends response parsing follows SerpAPI's
+   documented shape but hasn't been exercised against a live key in this
+   sandbox -- verify once `SERPAPI_KEY` is configured for real, and
+   parsing degrades by skipping a malformed row rather than crashing if
+   anything has drifted.
+3. **Externally submitted**: `POST /api/market-intelligence/signals` lets
    an out-of-process researcher write real findings directly — this is
    what an agent-driven web research job (a Claude session with web
    search, running on a schedule) is meant to call. See "Agent-driven
@@ -165,6 +200,15 @@ same `market_signals` table and both read back by
    this endpoint, persisted, and read back through the Opportunity Engine
    producing correctly-ranked opportunities — no fabricated data at any
    step.
+
+Making the daily Celery beat schedule fire for real also required fixing
+a pre-existing gap: no Celery worker process actually imported any task
+module (`app/queue/celery_app.py` had no `imports`/`autodiscover_tasks`),
+so nothing here was ever dispatchable via `.delay()`/`.apply_async()` in
+a real deployment — only direct Python calls (tests, and API routes that
+call a task function directly) worked. `TASK_MODULES` + `imports=` in
+`celery_app.py` fixes this for every existing task module, not just the
+new one.
 
 Both paths query *what to research today* from
 `app/pipeline/market_research_planner.py`, not a static list:

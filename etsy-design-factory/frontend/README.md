@@ -17,7 +17,10 @@ client-side:
 - **Market Signals** (`/market-signals`) -- recent real market-intelligence
   signals and today's research plan
   (`GET /api/market-intelligence/signals`,
-  `GET /api/market-intelligence/research-queries`), read-only.
+  `GET /api/market-intelligence/research-queries`), plus a "Refresh now"
+  button (`POST /api/market-intelligence/refresh`) that runs the same
+  organic-search + Google Trends refresh a daily Celery beat schedule
+  runs automatically.
 - **Getvela Export** (`/getvela`) -- how many approved designs are
   waiting, and a button that exports them as a CSV matching the real
   Getvela "Import new listings" template

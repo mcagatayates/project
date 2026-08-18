@@ -236,6 +236,10 @@ export function getResearchQueries(): Promise<ResearchPlanResponse> {
   return request<ResearchPlanResponse>(`/api/market-intelligence/research-queries`);
 }
 
+export function refreshMarketSignals(): Promise<MarketSignalListResponse> {
+  return request<MarketSignalListResponse>(`/api/market-intelligence/refresh`, { method: "POST" });
+}
+
 export function getGetvelaPendingCount(): Promise<{ pending_count: number }> {
   return request<{ pending_count: number }>(`/api/getvela/pending-count`);
 }

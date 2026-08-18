@@ -71,3 +71,40 @@ def test_research_queries_endpoint_returns_todays_plan(db_session):
     for q in body["queries"]:
         assert q["query"]
         assert q["reason"]
+
+
+def test_refresh_requires_serpapi_key(db_session, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.delenv("SERPAPI_KEY", raising=False)
+    get_settings.cache_clear()
+
+    client = TestClient(app)
+    resp = client.post("/api/market-intelligence/refresh")
+    assert resp.status_code == 400
+    assert "SERPAPI_KEY" in resp.json()["detail"]
+    get_settings.cache_clear()
+
+
+def test_refresh_persists_whatever_sources_actually_found(db_session, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("SERPAPI_KEY", "fake-key-for-test")
+    get_settings.cache_clear()
+
+    async def fake_refresh(session):
+        from app.memory.market_signal_memory import record_signal
+
+        record_signal(session, category="rising_trend", description="real finding", confidence=0.6, source="test")
+        return ["placeholder"]  # only length is used by the route
+
+    monkeypatch.setattr("app.api.routes.market_intelligence.refresh_real_market_signals", fake_refresh)
+
+    client = TestClient(app)
+    resp = client.post("/api/market-intelligence/refresh")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body["items"]) == 1
+    assert body["items"][0]["description"] == "real finding"
+
+    get_settings.cache_clear()

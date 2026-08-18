@@ -1,6 +1,12 @@
 import datetime
 
-from app.pipeline.seasonal_calendar import Occasion, active_occasions, load_occasions, next_occurrence
+from app.pipeline.seasonal_calendar import (
+    Occasion,
+    active_occasions,
+    load_occasions,
+    next_occurrence,
+    previous_occurrence,
+)
 
 HALLOWEEN = Occasion(name="Halloween", month=10, day=31, lead_weeks=12, keywords=("halloween wall art",))
 NEW_YEAR = Occasion(name="New Year", month=1, day=1, lead_weeks=6, keywords=("new year wall art",))
@@ -19,6 +25,21 @@ def test_next_occurrence_rolls_to_next_year_when_already_passed():
 def test_next_occurrence_today_counts_as_this_year():
     today = datetime.date(2026, 10, 31)
     assert next_occurrence(today, month=10, day=31) == today
+
+
+def test_previous_occurrence_this_year_when_already_passed():
+    today = datetime.date(2026, 11, 15)
+    assert previous_occurrence(today, month=10, day=31) == datetime.date(2026, 10, 31)
+
+
+def test_previous_occurrence_rolls_to_last_year_when_still_upcoming():
+    today = datetime.date(2026, 8, 14)
+    assert previous_occurrence(today, month=10, day=31) == datetime.date(2025, 10, 31)
+
+
+def test_previous_occurrence_today_does_not_count_as_past():
+    today = datetime.date(2026, 10, 31)
+    assert previous_occurrence(today, month=10, day=31) == datetime.date(2025, 10, 31)
 
 
 def test_halloween_is_active_in_mid_august_matching_real_etsy_seller_lead_time():

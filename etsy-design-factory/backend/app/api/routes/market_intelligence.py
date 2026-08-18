@@ -9,6 +9,7 @@ actually submitted.
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -26,6 +27,7 @@ from app.config import get_settings
 from app.memory.market_signal_memory import recent_signals
 from app.pipeline.market_intelligence import OpportunitySignal, ingest_signals
 from app.pipeline.market_research_planner import build_research_plan
+from app.pipeline.trend_signal import refresh_real_market_signals
 
 router = APIRouter(prefix="/api/market-intelligence", tags=["market-intelligence"])
 
@@ -77,6 +79,38 @@ def list_signals(within_days: int = 7, session: Session = Depends(get_db)) -> Ma
                 created_at=r.created_at,
             )
             for r in rows
+        ]
+    )
+
+
+@router.post("/refresh", response_model=MarketSignalListResponse)
+def refresh_signals(session: Session = Depends(get_db)) -> MarketSignalListResponse:
+    """Manual/catch-up trigger for the same real-signal refresh the
+    daily Celery beat schedule runs automatically (organic search +
+    Google Trends rising topics + seasonal onset learning -- see
+    app/pipeline/trend_signal.py). Requires SERPAPI_KEY; raises a clear
+    error rather than silently doing nothing when a human explicitly
+    asks for a refresh and it can't run."""
+    if not get_settings().serpapi_key:
+        raise HTTPException(
+            status_code=400,
+            detail="SERPAPI_KEY is not set (see .env.example) -- no real signal source is "
+            "configured, so there is nothing to refresh.",
+        )
+
+    found = asyncio.run(refresh_real_market_signals(session))
+    rows = recent_signals(session, within_days=1, limit=max(len(found), 1) + 10)
+    return MarketSignalListResponse(
+        items=[
+            MarketSignalOut(
+                id=r.id,
+                category=r.category,
+                description=r.description,
+                confidence=float(r.confidence),
+                source=r.source,
+                created_at=r.created_at,
+            )
+            for r in rows[: len(found)]
         ]
     )
 

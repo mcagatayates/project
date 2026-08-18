@@ -12,3 +12,16 @@ evergreen_trends:
   - "trending home decor color palette"
   - "popular interior design style"
   - "trending printable wall art"
+
+# Short topic terms (not full search-query sentences) for the Google
+# Trends adapter (app/providers/google_trends.py) -- Trends works on
+# topics/keywords, not phrased queries like the lists above. Used to
+# surface what's actually rising in search interest right now, and (for
+# config/seasonal_calendar.yaml's occasions) how many weeks before an
+# occasion interest empirically started rising last year. See
+# app/pipeline/trend_signal.py.
+trend_watch_terms:
+  - "wall art"
+  - "home decor"
+  - "printable wall art"
+  - "digital wall art"

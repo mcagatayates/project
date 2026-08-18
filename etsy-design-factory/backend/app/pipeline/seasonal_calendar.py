@@ -58,6 +58,17 @@ def next_occurrence(today: date, *, month: int, day: int) -> date:
     return candidate
 
 
+def previous_occurrence(today: date, *, month: int, day: int) -> date:
+    """The most recent past occurrence (strictly before today) of
+    month/day -- the mirror of next_occurrence, used by
+    app/pipeline/trend_signal.py to look at *last* year's real search
+    interest for an occasion, not the upcoming one."""
+    candidate = date(today.year, month, day)
+    if candidate >= today:
+        candidate = date(today.year - 1, month, day)
+    return candidate
+
+
 def active_occasions(today: date, *, occasions: tuple[Occasion, ...] | None = None) -> list[ActiveOccasion]:
     """Occasions whose lead-time window has started: 0 <= weeks_until <=
     lead_weeks. An occasion that already passed rolls to next year's date
