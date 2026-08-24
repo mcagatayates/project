@@ -186,6 +186,22 @@ code never encodes an accounting judgment call. An accountant must review
 and approve the real values, then also set `ACCOUNTING_RULES_APPROVED=true`
 before the system will finalize any real invoice.
 
+## Demo data (for trying the admin panel locally)
+
+To see the admin panel with realistic data without any real Gmail/Etsy/Logo
+credentials, seed the dev database from the synthetic test fixtures (uses
+`MockLogoClient`, so nothing leaves your machine):
+
+```bash
+npx tsx scripts/seedDemoData.ts   # resets and re-seeds the DB pointed at by DATABASE_URL
+npm run dev                       # or: npm run build && npm start
+# open http://localhost:3000/admin (Basic auth: ADMIN_USERNAME / ADMIN_PASSWORD)
+```
+
+This creates a mix of `DRAFT_CREATED`, `MANUAL_REVIEW` (missing address,
+total mismatch, cancellation, unrecognized format), and one
+`FINALIZED` order so every panel state is visible at once.
+
 ## Admin panel
 
 `GET /admin` (HTTP Basic auth) lists every processed order with its

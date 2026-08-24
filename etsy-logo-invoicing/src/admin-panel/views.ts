@@ -32,6 +32,7 @@ function layout(title: string, body: string): string {
   form { display: inline; }
   button { background: #2a5bd7; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
   button.secondary { background: #3a3f4a; }
+  button:disabled { background: #23262e; color: #5b6270; cursor: not-allowed; opacity: 0.7; }
   pre { background: #14171f; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 12px; }
   .issue { color: #ff8080; }
   .warn-banner { background: #4a2a12; color: #ffb066; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }

@@ -14,7 +14,7 @@ function samplePayload(overrides: Partial<LogoInvoicePayload> = {}): LogoInvoice
     invoiceScenario: "test",
     invoiceProfile: "test",
     customerName: "Jordan Test",
-    address: { lines: [], city: "Springfield", stateOrRegion: "IL", postalCode: "62704", country: "United States", countryIso2: "US" },
+    address: { addressLines: [], city: "Springfield", stateOrRegion: "IL", postalCode: "62704", country: "United States", countryIso2: "US" },
     currency: "USD",
     lines: [{ description: "Mug", quantity: 2, unitPrice: 18.5, amount: 37, productCode: "P1", vatRate: 0 }],
     exceptionCode: "301",

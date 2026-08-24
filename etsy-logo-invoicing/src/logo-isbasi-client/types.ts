@@ -1,5 +1,5 @@
 export interface LogoInvoiceAddress {
-  lines: string[];
+  addressLines: string[];
   city: string | null;
   stateOrRegion: string | null;
   postalCode: string | null;

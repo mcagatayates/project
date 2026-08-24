@@ -222,7 +222,7 @@ export class InvoiceService {
       invoiceProfile: env.LOGO_INVOICE_PROFILE ?? "",
       customerName: normalizedOrder.buyerFullName ?? "",
       address: {
-        lines: normalizedOrder.addressLines,
+        addressLines: normalizedOrder.addressLines,
         city: normalizedOrder.city,
         stateOrRegion: normalizedOrder.stateOrRegion,
         postalCode: normalizedOrder.postalCode,
