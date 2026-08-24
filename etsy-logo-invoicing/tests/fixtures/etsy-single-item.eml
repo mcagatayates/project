@@ -1,0 +1,37 @@
+From: Etsy <transaction@etsy.com>
+To: shopowner@example-shop.test
+Subject: You made a sale on Etsy! Order #1100000001
+Date: Mon, 10 Aug 2026 14:32:00 +0000
+Content-Type: text/plain; charset=utf-8
+MIME-Version: 1.0
+
+Hi ShopOwner,
+
+Good news! You sold an item on Etsy.
+
+Etsy order number: 1100000001
+Order date: August 10, 2026 14:32 UTC
+
+SHIP TO
+Jordan Test
+123 Test Avenue
+Springfield IL 62704
+United States
+
+ITEMS
+Handmade Ceramic Mug
+SKU: MUG-001
+Variation: Color: Blue
+Qty: 2
+Price: $18.50
+Item total: $37.00
+
+ORDER SUMMARY
+Item(s) Subtotal: $37.00
+Discount: $0.00
+Shipping: $0.00
+Sales Tax: $0.00
+Order total: $37.00
+Currency: USD
+
+Thanks for selling on Etsy!

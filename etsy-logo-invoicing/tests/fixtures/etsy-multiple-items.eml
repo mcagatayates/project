@@ -1,0 +1,43 @@
+From: Etsy <transaction@etsy.com>
+To: shopowner@example-shop.test
+Subject: You made a sale on Etsy! Order #1100000002
+Date: Tue, 11 Aug 2026 09:05:00 +0000
+Content-Type: text/html; charset=utf-8
+MIME-Version: 1.0
+
+<html>
+<body>
+<p>Hi ShopOwner,</p>
+<p>Good news! You sold items on Etsy.</p>
+<p>Etsy order number: 1100000002<br/>
+Order date: August 11, 2026 09:05 UTC</p>
+<p>SHIP TO<br/>
+Alex Sample<br/>
+456 Sample Road<br/>
+Apt 2<br/>
+Portland OR 97201<br/>
+United States</p>
+<p>ITEMS<br/>
+Handmade Ceramic Mug<br/>
+SKU: MUG-001<br/>
+Variation: Color: Blue<br/>
+Qty: 1<br/>
+Price: $18.50<br/>
+Item total: $18.50</p>
+<p>Woven Wall Hanging<br/>
+SKU: WALL-014<br/>
+Variation: Size: Large<br/>
+Personalization: &quot;For Mom&quot;<br/>
+Qty: 1<br/>
+Price: $54.00<br/>
+Item total: $54.00</p>
+<p>ORDER SUMMARY<br/>
+Item(s) Subtotal: $72.50<br/>
+Discount: $0.00<br/>
+Shipping: $0.00<br/>
+Sales Tax: $0.00<br/>
+Order total: $72.50<br/>
+Currency: USD</p>
+<p>Thanks for selling on Etsy!</p>
+</body>
+</html>

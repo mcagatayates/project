@@ -1,0 +1,18 @@
+From: Etsy <transaction@etsy.com>
+To: shopowner@example-shop.test
+Subject: You made a sale!
+Date: Mon, 17 Aug 2026 09:30:00 +0000
+Content-Type: text/plain; charset=utf-8
+MIME-Version: 1.0
+
+Hey there!
+
+We redesigned our emails. Check your Shop Manager app for full order
+details. This message intentionally omits the structured fields our
+parser expects (no "Etsy order number:", no "SHIP TO" block, no "ITEMS"
+block, no "ORDER SUMMARY" block) to simulate Etsy changing their email
+template.
+
+Open the app to see what sold.
+
+- The Etsy Team

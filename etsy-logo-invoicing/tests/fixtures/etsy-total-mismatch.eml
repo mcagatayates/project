@@ -1,0 +1,36 @@
+From: Etsy <transaction@etsy.com>
+To: shopowner@example-shop.test
+Subject: You made a sale on Etsy! Order #1100000006
+Date: Sat, 15 Aug 2026 12:00:00 +0000
+Content-Type: text/plain; charset=utf-8
+MIME-Version: 1.0
+
+Hi ShopOwner,
+
+Good news! You sold an item on Etsy.
+
+Etsy order number: 1100000006
+Order date: August 15, 2026 12:00 UTC
+
+SHIP TO
+Casey Fixture
+55 Broken Total Way
+Austin TX 73301
+United States
+
+ITEMS
+Beaded Bracelet
+SKU: BRACELET-010
+Qty: 1
+Price: $15.00
+Item total: $15.00
+
+ORDER SUMMARY
+Item(s) Subtotal: $15.00
+Discount: $0.00
+Shipping: $0.00
+Sales Tax: $0.00
+Order total: $99.99
+Currency: USD
+
+Thanks for selling on Etsy!

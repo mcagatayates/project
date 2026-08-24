@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  DETECTED
+  PARSED
+  VALIDATED
+  DRAFT_CREATED
+  FINALIZED
+  MANUAL_REVIEW
+  FAILED_RETRYABLE
+  FAILED_PERMANENT
+  CANCELLED
+}
+
+enum OrderSource {
+  EMAIL_ONLY
+  EMAIL_AND_API
+}
+
+model Order {
+  id                    String      @id @default(uuid())
+  shopId                String
+  etsyOrderId           String
+  source                OrderSource @default(EMAIL_ONLY)
+  mailMessageId         String?
+  mailHash              String
+  rawPayloadEncrypted   String
+  normalizedOrderJson   Json?
+  validationResult      Json?
+  status                OrderStatus @default(DETECTED)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  invoice               Invoice?
+  processingAttempts    ProcessingAttempt[]
+
+  @@unique([shopId, etsyOrderId], name: "shopId_etsyOrderId")
+  @@index([mailHash])
+  @@index([status])
+  @@map("orders")
+}
+
+model Invoice {
+  id                        String   @id @default(uuid())
+  orderId                   String   @unique
+  order                     Order    @relation(fields: [orderId], references: [id])
+  logoInvoiceId             String?
+  externalReference         String   @unique
+  invoiceNumber             String?
+  invoiceStatus             String
+  requestHash               String
+  requestPayloadRedacted    Json
+  responsePayloadRedacted   Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([logoInvoiceId])
+  @@map("invoices")
+}
+
+model ProcessingAttempt {
+  id                    String   @id @default(uuid())
+  orderId               String
+  order                 Order    @relation(fields: [orderId], references: [id])
+  operation             String
+  attemptNumber         Int
+  status                String
+  errorCode             String?
+  errorMessageRedacted  String?
+  createdAt             DateTime @default(now())
+
+  @@index([orderId])
+  @@map("processing_attempts")
+}
+
+model AuditLog {
+  id                String   @id @default(uuid())
+  entityType        String
+  entityId          String
+  action            String
+  metadataRedacted  Json?
+  createdAt         DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
