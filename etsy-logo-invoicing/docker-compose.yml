@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: etsy_invoicing
+      POSTGRES_PASSWORD: etsy_invoicing
+      POSTGRES_DB: etsy_invoicing
+    ports:
+      - "5432:5432"
+    volumes:
+      - etsy_invoicing_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U etsy_invoicing -d etsy_invoicing"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://etsy_invoicing:etsy_invoicing@postgres:5432/etsy_invoicing?schema=public
+    ports:
+      - "3000:3000"
+    command: >
+      sh -c "npx prisma migrate deploy && node dist/index.js"
+
+volumes:
+  etsy_invoicing_pgdata:

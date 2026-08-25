@@ -1,0 +1,36 @@
+From: Etsy <transaction@etsy.com>
+To: shopowner@example-shop.test
+Subject: Order #1100000007 was cancelled
+Date: Sun, 16 Aug 2026 10:00:00 +0000
+Content-Type: text/plain; charset=utf-8
+MIME-Version: 1.0
+
+Hi ShopOwner,
+
+Your buyer's order was cancelled.
+
+Etsy order number: 1100000007
+Order date: August 16, 2026 10:00 UTC
+
+SHIP TO
+Robin Cancelled
+1 Refund Street
+Chicago IL 60601
+United States
+
+ITEMS
+Custom Pet Portrait
+SKU: PORTRAIT-005
+Qty: 1
+Price: $45.00
+Item total: $45.00
+
+ORDER SUMMARY
+Item(s) Subtotal: $45.00
+Discount: $0.00
+Shipping: $0.00
+Sales Tax: $0.00
+Order total: $45.00
+Currency: USD
+
+This order has been cancelled and no further action is needed from you.

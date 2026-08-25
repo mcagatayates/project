@@ -1,0 +1,30 @@
+From: Etsy <transaction@etsy.com>
+To: shopowner@example-shop.test
+Subject: You made a sale on Etsy! Order #1100000005
+Date: Fri, 14 Aug 2026 08:00:00 +0000
+Content-Type: text/plain; charset=utf-8
+MIME-Version: 1.0
+
+Hi ShopOwner,
+
+Good news! You sold an item on Etsy.
+
+Etsy order number: 1100000005
+Order date: August 14, 2026 08:00 UTC
+
+ITEMS
+Digital Printable Wall Art
+SKU: DIGITAL-003
+Qty: 1
+Price: $9.00
+Item total: $9.00
+
+ORDER SUMMARY
+Item(s) Subtotal: $9.00
+Discount: $0.00
+Shipping: $0.00
+Sales Tax: $0.00
+Order total: $9.00
+Currency: USD
+
+Thanks for selling on Etsy!

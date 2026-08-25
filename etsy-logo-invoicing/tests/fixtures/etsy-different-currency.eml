@@ -1,0 +1,37 @@
+From: Etsy <transaction@etsy.com>
+To: shopowner@example-shop.test
+Subject: You made a sale on Etsy! Order #1100000004
+Date: Thu, 13 Aug 2026 11:15:00 +0000
+Content-Type: text/plain; charset=utf-8
+MIME-Version: 1.0
+
+Hi ShopOwner,
+
+Good news! You sold an item on Etsy.
+
+Etsy order number: 1100000004
+Order date: August 13, 2026 11:15 UTC
+
+SHIP TO
+Mika Beispiel
+10 Muster Strasse
+Berlin BE 10115
+Germany
+
+ITEMS
+Hand-knit Wool Scarf
+SKU: SCARF-022
+Variation: Color: Charcoal
+Qty: 1
+Price: 29.90 EUR
+Item total: 29.90 EUR
+
+ORDER SUMMARY
+Item(s) Subtotal: 29.90 EUR
+Discount: 0.00 EUR
+Shipping: 8.00 EUR
+Sales Tax: 0.00 EUR
+Order total: 37.90 EUR
+Currency: EUR
+
+Thanks for selling on Etsy!
