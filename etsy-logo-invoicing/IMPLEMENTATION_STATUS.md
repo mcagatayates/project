@@ -132,13 +132,25 @@ image.
 
 ## Real blockers (not fabricated, per instructions)
 
-1. **`docs/logo-isbasi-api/` was empty.** `src/logo-isbasi-client/RealLogoIsbasiClient.ts`
-   is an intentionally unimplemented stub — every method throws
+1. **`docs/logo-isbasi-api/` was empty — now partially unblocked (2026-08-25).**
+   `src/logo-isbasi-client/RealLogoIsbasiClient.ts` is still an
+   intentionally unimplemented stub — every method throws
    `LogoApiNotConfiguredError("TODO: BLOCKED_BY_LOGO_API_DOCUMENTATION", ...)`
-   and makes zero network calls. No endpoint path, auth scheme, or payload
-   field was guessed anywhere. **Action needed**: add the official Logo
-   İşbaşı API documentation to `docs/logo-isbasi-api/` and follow the
-   implementation checklist in `docs/logo-isbasi-api/README.md`.
+   and makes zero network calls. Logo emailed test-environment onboarding
+   info, which confirmed the login/authentication endpoint contract (see
+   `docs/logo-isbasi-api/README.md` "Status update" for the exact request
+   shape) — but the actual sales-invoice creation endpoints, their request/
+   response schemas, and the invoice-lookup-by-reference endpoint are still
+   undocumented from an authoritative source, so no further implementation
+   was done (still zero guessing). The full reference lives at
+   https://developers.isbasi.com/ (login-walled), which this implementation
+   session's network egress policy blocks — confirmed via a blocked
+   `WebFetch` and a blocked `curl` (proxy policy denial, not a Logo-side
+   error). **Action needed**: someone with unrestricted access to that
+   portal (or a session with it added to the network allowlist) needs to
+   retrieve the sales-invoice endpoint documentation; see
+   `docs/logo-isbasi-api/README.md` for the exact list of what's still
+   missing and the implementation checklist to follow once it's available.
 2. **`docs/accounting-rules.md` was empty.** `invoice-policy` cannot
    resolve a policy, so `order-validator` fails every order with
    `ACCOUNTING_POLICY_NOT_DEFINED` and **no invoice is ever created** until
