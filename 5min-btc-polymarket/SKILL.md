@@ -11,6 +11,7 @@ description: Run and monitor BTC 5-minute Up/Down trading on Polymarket using mo
 - Canonical skill runner: `scripts/test_btc_5m_session_exit_sl.py`
 - Skill control entrypoint: `scripts/btc5m_ctl.sh`
 - Compatibility wrapper (deprecated): `scripts/run_btc_5m_threshold_test.py`
+- Paper-trading simulator (no real orders, virtual balance): `scripts/btc5m_paper.py`
 
 ## Strategy Alignment
 Use this skill when the operator wants to execute a BTC 5m momentum strategy:

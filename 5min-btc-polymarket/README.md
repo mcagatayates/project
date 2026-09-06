@@ -40,6 +40,16 @@ Read:
 - `SKILL.md`
 - `config/btc_5m_profiles.yaml`
 
+### Paper Trading (no real money)
+Try the strategy against real, live Polymarket prices without risking anything: no API keys, no `pm-hl-conservative-plus-repo`, no `--execute` flag (it doesn't exist in this script), and no order is ever sent. It just simulates fills against the live order book and tracks a virtual balance (default $100) in a local JSON ledger.
+
+```bash
+pip install py-clob-client requests   # only network dependency needed for paper mode
+python3 scripts/btc5m_paper.py --profile conservative --start-balance 100 --minutes 120
+```
+
+Re-run with the same `--ledger` (default `runtime/paper_ledger.json`) to keep accumulating virtual PnL across sessions, or pass `--reset` to start over at `--start-balance`.
+
 Run a conservative real test (example):
 ```bash
 .venv/bin/python scripts/test_btc_5m_session_exit_sl.py --profile conservative --execute
